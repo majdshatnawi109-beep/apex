@@ -1,0 +1,4204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Apex JO - نظام إدارة المتجر السحابي والفواتير</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --primary: #0f172a;
+    --primary-soft: #1e293b;
+    --accent: #10b981;
+    --accent-dark: #059669;
+    --accent-soft: rgba(16, 185, 129, 0.12);
+    --blue: #2563eb;
+    --blue-soft: rgba(37, 99, 235, 0.1);
+    --danger: #ef4444;
+    --danger-soft: rgba(239, 68, 68, 0.1);
+    --warning: #f59e0b;
+    --warning-soft: rgba(245, 158, 11, 0.12);
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 4px 10px -6px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 24px 48px -12px rgba(15, 23, 42, 0.22);
+    --radius-sm: 10px;
+    --radius-md: 16px;
+    --radius-lg: 22px;
+  }
+
+  * {
+    box-sizing: border-box;
+    font-family: 'Cairo', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top right, #eef2ff 0%, var(--bg) 42%, #f1f5f9 100%);
+    color: var(--text);
+    padding-bottom: 94px;
+    min-height: 100vh;
+    letter-spacing: -0.01em;
+  }
+
+  .ico {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+    stroke-width: 2.2;
+    flex-shrink: 0;
+  }
+  .ico-lg { width: 20px; height: 20px; }
+  .ico-sm { width: 14px; height: 14px; }
+
+  .apex-mark-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #050505;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .apex-mark-wrap svg,
+  .apex-mark-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  #authScreen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(145deg, #050505 0%, #0f172a 58%, #172554 100%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .auth-box {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    width: 100%;
+    max-width: 390px;
+    border-radius: 28px;
+    padding: 32px 24px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  .logo-badge {
+    width: 112px;
+    height: 76px;
+    margin: 0 auto 14px;
+    border-radius: 20px;
+    border: 2px solid #1e293b;
+    box-shadow: 0 14px 28px rgba(5, 5, 5, 0.28);
+  }
+
+  header {
+    background: rgba(10, 12, 18, 0.96);
+    backdrop-filter: blur(14px);
+    color: #fff;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    width: 58px;
+    height: 40px;
+    border-radius: 11px;
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 6px 11px;
+    border-radius: 11px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    transition: 0.15s ease;
+  }
+  .back-btn:hover { background: rgba(255, 255, 255, 0.18); }
+  .sync-pill {
+    font-size: 11px;
+    background: rgba(16, 185, 129, 0.14);
+    color: #34d399;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid rgba(16, 185, 129, 0.32);
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sync-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+  }
+
+  .container { max-width: 640px; margin: 0 auto; padding: 16px 14px; }
+  .section { display: none; animation: fadeIn 0.22s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary);
+  }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--card);
+    padding: 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  .stat-card.full {
+    grid-column: span 2;
+    background: linear-gradient(135deg, #090d16 0%, #0f172a 55%, #1e293b 100%);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: var(--shadow-md);
+  }
+  .stat-card.full .stat-label { color: #94a3b8; }
+  .stat-card.full .stat-val { color: #34d399; font-size: 25px; }
+  .stat-card.clickable {
+    cursor: pointer;
+    border-color: #bfdbfe;
+    background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%);
+  }
+  .stat-card.clickable-profit {
+    cursor: pointer;
+    border-color: #6ee7b7;
+    background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+  }
+  .stat-card.clickable-debt {
+    cursor: pointer;
+    border-color: #fecaca;
+    background: linear-gradient(145deg, #ffffff 0%, #fef2f2 100%);
+  }
+  .stat-card.clickable-exp {
+    cursor: pointer;
+    border-color: #fde68a;
+    background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
+  }
+  .stat-card.clickable-ext {
+    cursor: pointer;
+    border-color: #a7f3d0;
+    background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+  }
+  .stat-card.clickable-inv {
+    cursor: pointer;
+    border-color: #c7d2fe;
+    background: linear-gradient(145deg, #ffffff 0%, #eef2ff 100%);
+  }
+  .stat-card.clickable:hover,
+  .stat-card.clickable-profit:hover,
+  .stat-card.clickable-debt:hover,
+  .stat-card.clickable-exp:hover,
+  .stat-card.clickable-ext:hover,
+  .stat-card.clickable-inv:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .stat-card.clickable:active,
+  .stat-card.clickable-profit:active,
+  .stat-card.clickable-debt:active,
+  .stat-card.clickable-exp:active,
+  .stat-card.clickable-ext:active,
+  .stat-card.clickable-inv:active { transform: scale(0.98); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 800;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-val { font-size: 20px; font-weight: 900; color: var(--primary); line-height: 1.2; }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--accent-dark);
+    font-weight: 800;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .split-pills { display: flex; gap: 8px; margin-top: 12px; }
+  .split-pill {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 9px 11px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius-lg);
+    padding: 17px;
+    border: 1px solid var(--border);
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-sm);
+  }
+  .form-group { margin-bottom: 12px; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 13px;
+    font-size: 13.5px;
+    font-weight: 600;
+    background: #f8fafc;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  }
+  textarea { resize: vertical; min-height: 74px; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.14);
+  }
+
+  .unit-cost-hint {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .consignment-info-box {
+    display: none;
+    background: #f0fdf4;
+    border: 1.5px solid #86efac;
+    color: #065f46;
+    padding: 11px 13px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 13px;
+    font-size: 13.5px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: transform 0.14s ease, filter 0.14s ease, background 0.14s ease;
+  }
+  .btn:hover { filter: brightness(0.98); }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+  }
+  .btn-dark {
+    background: linear-gradient(135deg, #1e293b 0%, var(--primary) 100%);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  }
+  .btn-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.22);
+  }
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+  }
+  .btn-pdf {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    padding: 9px 13px;
+    width: auto;
+    font-size: 12px;
+    border-radius: 11px;
+  }
+  .btn-sm { padding: 6px 10px; font-size: 11.5px; border-radius: 9px; width: auto; gap: 5px; }
+  .btn-xs { padding: 4px 7px; font-size: 11px; border-radius: 7px; width: auto; gap: 3px; }
+  .btn-move {
+    padding: 5px 7px;
+    font-size: 12px;
+    border-radius: 9px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-weight: 900;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .batch-card {
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 13px;
+    margin-bottom: 10px;
+  }
+  .batch-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 9px;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .batch-metric {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 11px;
+    padding: 8px 10px;
+  }
+
+  .imei-row { display: flex; gap: 7px; align-items: center; }
+  .btn-scan {
+    padding: 11px 12px;
+    border: none;
+    border-radius: 13px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .scanner-box {
+    display: none;
+    margin-bottom: 12px;
+    padding: 11px;
+    border-radius: 16px;
+    background: #0f172a;
+    color: #fff;
+    border: 2px solid var(--accent);
+  }
+  .scanner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #34d399;
+  }
+  #imeiReader { border-radius: 12px; overflow: hidden; background: #000; }
+
+  .cond-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .cond-btn {
+    padding: 11px;
+    border: 2px solid var(--border);
+    border-radius: 13px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: 0.15s;
+  }
+  .cond-btn.active-new { border-color: var(--accent); background: #ecfdf5; color: var(--accent-dark); }
+  .cond-btn.active-used { border-color: var(--warning); background: #fffbeb; color: #b45309; }
+  .cond-btn.active-sale { border-color: var(--accent); background: #ecfdf5; color: var(--accent-dark); }
+  .cond-btn.active-purchase { border-color: var(--blue); background: #eff6ff; color: var(--blue); }
+  .cond-btn.active-own { border-color: var(--primary); background: #f1f5f9; color: var(--primary); }
+  .cond-btn.active-consignment { border-color: #059669; background: #ecfdf5; color: #047857; }
+
+  .color-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+  .chip {
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    transition: 0.14s;
+  }
+  .chip.selected { border-color: var(--primary); background: var(--primary); color: #fff; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.22); }
+
+  .item-card {
+    background: var(--card);
+    border-radius: var(--radius-md);
+    padding: 14px 15px;
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .item-card:hover { box-shadow: var(--shadow-md); }
+  .item-card.stale { border-right: 5px solid var(--danger); background: #fef2f2; }
+
+  .badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge-new { background: #d1fae5; color: #065f46; }
+  .badge-used { background: #fef3c7; color: #92400e; }
+  .badge-stale { background: #fee2e2; color: #991b1b; }
+  .badge-batch { background: #e0e7ff; color: #3730a3; }
+  .badge-purchase { background: #dbeafe; color: #1e40af; }
+  .badge-warranty { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+  .badge-consignment { background: #ccfbf1; color: #0f766e; border: 1px solid #99f6e4; }
+
+  .inv-total-bar {
+    background: linear-gradient(135deg, #090d16 0%, #0f172a 60%, #1e293b 100%);
+    color: #fff;
+    padding: 12px 15px;
+    border-radius: 15px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 800;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .note-box {
+    margin-top: 7px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #334155;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .product-note-banner {
+    margin-top: 9px;
+    padding: 9px 11px;
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-right: 4px solid #f59e0b;
+    border-radius: 11px;
+    font-size: 12px;
+    color: #78350f;
+    font-weight: 700;
+    line-height: 1.55;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .product-note-actions {
+    display: inline-flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .profit-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .profit-box {
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    text-align: center;
+  }
+  .profit-box.pos { background: #ecfdf5; border-color: #a7f3d0; }
+  .profit-box.neg { background: #fef2f2; border-color: #fecaca; }
+  .profit-box-label { font-size: 11px; font-weight: 800; color: var(--muted); }
+  .profit-box-val { font-size: 14px; font-weight: 900; margin-top: 4px; }
+
+  .invoice-sheet {
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 10px;
+    box-shadow: inset 0 0 0 1px #f1f5f9;
+  }
+  .invoice-top-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 14px;
+  }
+  .shop-brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .shop-logo-box {
+    width: 74px;
+    height: 52px;
+    border-radius: 13px;
+    border: 2px solid #1e293b;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+    flex-shrink: 0;
+  }
+  .invoice-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 11px 13px;
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  .warranty-banner {
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1.5px solid #86efac;
+    color: #065f46;
+    border-radius: 14px;
+    padding: 11px 13px;
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.6;
+  }
+
+  nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 7px 2px 9px;
+    z-index: 100;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+  }
+  .nav-item {
+    border: none;
+    background: none;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 800;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 4px;
+    border-radius: 11px;
+    transition: color 0.15s, background 0.15s;
+    min-width: 46px;
+  }
+  .nav-item.active {
+    color: var(--accent-dark);
+    background: rgba(16, 185, 129, 0.1);
+  }
+  .nav-icon { display: flex; align-items: center; justify-content: center; height: 19px; }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 13, 22, 0.72);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+  }
+  .modal-content {
+    background: #fff;
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+  }
+  .confirm-box { max-width: 390px; text-align: center; }
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+  th, td { border: 1px solid #cbd5e1; padding: 7px 6px; text-align: right; }
+  th { background: #0f172a; color: #fff; }
+
+  .debt-item-box {
+    border: 1.5px solid #fecaca;
+    background: #fef2f2;
+    border-radius: 16px;
+    padding: 13px;
+    margin-bottom: 10px;
+  }
+  .payment-row-item {
+    background: #fff;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    padding: 7px 9px;
+    margin-top: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .toast-banner {
+    position: fixed;
+    top: 66px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    z-index: 2000;
+    display: none;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.28);
+    white-space: nowrap;
+  }
+
+  @media print {
+    body * { visibility: hidden; }
+    #pdfModal.print-target, #pdfModal.print-target * { visibility: visible; }
+    #pdfModal.print-target { position: absolute; inset: 0; background: #fff; padding: 0; }
+    #invoicePreviewModal.print-target, #invoicePreviewModal.print-target * { visibility: visible; }
+    #invoicePreviewModal.print-target { position: absolute; inset: 0; background: #fff; padding: 0; }
+    #profitReportModal.print-target, #profitReportModal.print-target * { visibility: visible; }
+    #profitReportModal.print-target { position: absolute; inset: 0; background: #fff; padding: 0; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-banner" id="toastBanner"></div>
+
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="apex-mark-wrap logo-badge" data-logo-slot="auth"></div>
+    <h2 style="margin:0 0 4px; font-weight:900;">Apex JO Cloud</h2>
+    <p style="margin:0 0 22px; font-size:13px; color:var(--muted);">نظام إدارة المخزون والمبيعات والفواتير السحابي</p>
+    <div class="form-group" style="text-align:right;">
+      <label>البريد الإلكتروني</label>
+      <input type="email" id="loginEmail" placeholder="example@gmail.com">
+    </div>
+    <div class="form-group" style="text-align:right;">
+      <label>كلمة السر</label>
+      <input type="password" id="loginPass" placeholder="••••••••">
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()" id="loginBtn">
+      <i data-lucide="log-in" class="ico"></i>
+      <span>تسجيل الدخول</span>
+    </button>
+    <p id="authErr" style="color:var(--danger); font-size:12px; margin-top:10px; font-weight:800;"></p>
+  </div>
+</div>
+
+<header>
+  <div class="brand">
+    <button class="back-btn" id="headerBackBtn" onclick="goBack()">
+      <i data-lucide="arrow-right" class="ico-sm"></i>
+      <span>رجوع</span>
+    </button>
+    <div class="apex-mark-wrap brand-icon" data-logo-slot="header"></div>
+    <div>
+      <div style="font-weight:900; font-size:15.5px; line-height:1.15;">Apex JO</div>
+      <div style="font-size:10.5px; color:#94a3b8; font-weight:600;">إدارة الهواتف والفواتير</div>
+    </div>
+  </div>
+  <div class="sync-pill" id="syncStatus">
+    <span class="sync-dot"></span>
+    <span>متصل سحابياً</span>
+  </div>
+</header>
+
+<div class="container">
+  <!-- الرئيسية -->
+  <div id="sec-home" class="section active">
+    <div class="stats-grid">
+      <div class="stat-card full">
+        <div class="stat-label">
+          <i data-lucide="wallet" class="ico" style="color:#34d399;"></i>
+          <span>إجمالي تكلفة الأجهزة المشتراة من مالك (بدون الأمانات)</span>
+        </div>
+        <div class="stat-val" id="statStockVal">0 JOD</div>
+        <div class="split-pills">
+          <div class="split-pill">
+            <span style="display:inline-flex; align-items:center; gap:5px;"><i data-lucide="sparkles" class="ico-sm" style="color:#34d399;"></i> الجديد:</span>
+            <span style="color:#34d399; font-weight:900;" id="statNewVal">0 JOD</span>
+          </div>
+          <div class="split-pill">
+            <span style="display:inline-flex; align-items:center; gap:5px;"><i data-lucide="refresh-cw" class="ico-sm" style="color:#fbbf24;"></i> المستخدم:</span>
+            <span style="color:#fbbf24; font-weight:900;" id="statUsedVal">0 JOD</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card clickable" onclick="openPdfReport()" title="اضغط لتجهيز كشف PDF">
+        <div class="stat-label" style="color:#1e40af;">
+          <i data-lucide="smartphone" class="ico" style="color:#2563eb;"></i>
+          <span>الأجهزة المتوفرة</span>
+        </div>
+        <div class="stat-val" id="statCount">0</div>
+        <div class="stat-sub" style="color:#2563eb;">
+          <span>كشف PDF</span>
+          <i data-lucide="file-text" class="ico-sm"></i>
+        </div>
+      </div>
+
+      <div class="stat-card clickable-profit" onclick="openProfitReport()" title="اضغط لعرض مصادر الأرباح وتصديرها PDF">
+        <div class="stat-label" style="color:#065f46;">
+          <i data-lucide="trending-up" class="ico" style="color:#059669;"></i>
+          <span>صافي الأرباح</span>
+        </div>
+        <div class="stat-val" style="color:var(--accent-dark);" id="statProfit">0 JOD</div>
+        <div class="stat-sub" id="statMonthProfit">هذا الشهر: 0 JOD • تفاصيل PDF</div>
+      </div>
+
+      <div class="stat-card clickable-inv" onclick="switchTab('invoices')" title="إدارة فواتير البيع والشراء">
+        <div class="stat-label" style="color:#1e40af;">
+          <i data-lucide="file-badge-2" class="ico" style="color:#2563eb;"></i>
+          <span>الفواتير (بيع / شراء)</span>
+        </div>
+        <div class="stat-val" style="color:#1d4ed8;" id="statInvoicesCount">0</div>
+        <div class="stat-sub" style="color:#2563eb;">
+          <span>إصدار وطباعة PDF</span>
+          <i data-lucide="arrow-up-left" class="ico-sm"></i>
+        </div>
+      </div>
+
+      <div class="stat-card clickable-ext" onclick="switchTab('extra')" title="إدارة وتعديل الربح الخارجي">
+        <div class="stat-label" style="color:#065f46;">
+          <i data-lucide="badge-plus" class="ico" style="color:#059669;"></i>
+          <span>الربح الخارجي</span>
+        </div>
+        <div class="stat-val" style="color:#059669;" id="statExtraIncome">0 JOD</div>
+        <div class="stat-sub" style="color:#059669;" id="statExtraIncomeSub">
+          <span>يزيد على الربح</span>
+          <i data-lucide="arrow-up-left" class="ico-sm"></i>
+        </div>
+      </div>
+
+      <div class="stat-card clickable-exp" onclick="switchTab('exp')" title="إدارة وتعديل المصروفات">
+        <div class="stat-label" style="color:#92400e;">
+          <i data-lucide="receipt" class="ico" style="color:#d97706;"></i>
+          <span>إجمالي المصروفات</span>
+        </div>
+        <div class="stat-val" style="color:#b45309;" id="statExpenses">0 JOD</div>
+        <div class="stat-sub" style="color:#b45309;" id="statExpensesSub">
+          <span>يُخصم من الربح</span>
+          <i data-lucide="arrow-up-left" class="ico-sm"></i>
+        </div>
+      </div>
+
+      <div class="stat-card clickable-debt" onclick="openDebtsModal()">
+        <div class="stat-label" style="color:#991b1b;">
+          <i data-lucide="book-open-check" class="ico" style="color:#ef4444;"></i>
+          <span>الذمم الجارية</span>
+        </div>
+        <div class="stat-val" style="color:var(--danger);" id="statDebts">0 JOD</div>
+        <div class="stat-sub" style="color:#991b1b;" id="statDebtsCount">0 ذمم جارية</div>
+      </div>
+    </div>
+
+    <div class="card" id="staleAlertBox" style="display:none; border-color:#fca5a5; background:#fef2f2;">
+      <div style="font-weight:800; color:#991b1b; font-size:13.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+        <i data-lucide="alert-triangle" class="ico"></i>
+        <span>تنبيه ركود المخزون (+12 يوم)</span>
+      </div>
+      <div id="staleList" style="font-size:12px; color:#7f1d1d; font-weight:700;"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:800; margin-bottom:11px; display:flex; align-items:center; gap:6px;">
+        <i data-lucide="zap" class="ico" style="color:#f59e0b;"></i>
+        <span>اختصارات سريعة</span>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button class="btn btn-dark" onclick="switchTab('add', true)">
+          <i data-lucide="plus-circle" class="ico"></i>
+          <span>إضافة جهاز</span>
+        </button>
+        <button class="btn btn-primary" onclick="switchTab('sell')">
+          <i data-lucide="circle-dollar-sign" class="ico"></i>
+          <span>تسجيل بيعة</span>
+        </button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px;">
+        <button class="btn" style="background:#eef2ff; color:#1e40af; border:1px solid #c7d2fe; padding:10px 8px; font-size:12px;" onclick="switchTab('invoices')">
+          <i data-lucide="file-plus-2" class="ico-sm"></i>
+          <span>فاتورة جديدة</span>
+        </button>
+        <button class="btn" style="background:#f1f5f9; color:#3730a3; border:1px solid #cbd5e1; padding:10px 8px; font-size:12px;" onclick="openBatchModal()">
+          <i data-lucide="headphones" class="ico-sm"></i>
+          <span>دفعة إكسسوار</span>
+        </button>
+        <button class="btn" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:10px 8px; font-size:12px;" onclick="switchTab('extra')">
+          <i data-lucide="trending-up" class="ico-sm"></i>
+          <span>ربح خارجي</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- المخزون -->
+  <div id="sec-inv" class="section">
+    <div class="section-head">
+      <h3 class="section-title">
+        <i data-lucide="package" class="ico-lg" style="color:#2563eb;"></i>
+        <span>المخزون المتوفر</span>
+      </h3>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-sm" style="background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;" onclick="openBatchModal()">
+          <i data-lucide="headphones" class="ico-sm"></i>
+          <span>دفعة</span>
+        </button>
+        <button class="btn btn-pdf" onclick="openPdfReport()">
+          <i data-lucide="file-down" class="ico-sm"></i>
+          <span>كشف PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="inv-total-bar">
+      <span>تكلفة الأجهزة المملوكة المعروضة:</span>
+      <span style="color:#34d399; font-size:15px;" id="invFilteredTotal">0 JOD</span>
+    </div>
+
+    <div class="form-group">
+      <input type="text" id="searchInv" placeholder="ابحث بالموديل، اللون، الملاحظات، أمانة، أو IMEI..." onkeyup="renderInv()">
+    </div>
+
+    <div style="display:flex; gap:6px; margin-bottom:12px;">
+      <button class="btn btn-sm btn-dark" onclick="setFilter('all')" id="f-all">الكل</button>
+      <button class="btn btn-sm" style="background:#fff; border:1px solid var(--border);" onclick="setFilter('new')" id="f-new">
+        <i data-lucide="sparkles" class="ico-sm" style="color:#059669;"></i>
+        <span>جديد</span>
+      </button>
+      <button class="btn btn-sm" style="background:#fff; border:1px solid var(--border);" onclick="setFilter('used')" id="f-used">
+        <i data-lucide="refresh-cw" class="ico-sm" style="color:#d97706;"></i>
+        <span>مستخدم</span>
+      </button>
+    </div>
+    <div id="invList"></div>
+  </div>
+
+  <!-- إضافة / تعديل جهاز -->
+  <div id="sec-add" class="section">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:13px;">
+        <h3 class="section-title" id="formTitle">
+          <i data-lucide="plus-circle" class="ico-lg" style="color:#059669;"></i>
+          <span>إضافة جهاز للمخزون</span>
+        </h3>
+        <button class="btn btn-sm" style="background:#f1f5f9; color:#0f172a; border:1px solid var(--border);" onclick="goBack()">
+          <i data-lucide="arrow-right" class="ico-sm"></i>
+          <span>رجوع</span>
+        </button>
+      </div>
+      <input type="hidden" id="editItemId">
+
+      <label>نوع التمويل / ملكية الجهاز</label>
+      <div class="cond-row">
+        <div class="cond-btn active-own" id="btnOwn" onclick="setFundingSource('own')">
+          <i data-lucide="wallet" class="ico-sm"></i>
+          <span>من مالي الخاص (تكلفة)</span>
+        </div>
+        <div class="cond-btn" id="btnConsignment" onclick="setFundingSource('consignment')">
+          <i data-lucide="hand-coins" class="ico-sm"></i>
+          <span>أمانة / عمولة (ربح فقط)</span>
+        </div>
+      </div>
+
+      <div class="consignment-info-box" id="consignmentInfoBox">
+        هذا الجهاز <b>لا يُحتسب ضمن إجمالي تكلفة الأجهزة</b> لأنك لم تدفع ثمنه من مالك الخاص. عند بيعه يمكنك تحديد <b>الربح/العمولة العائدة لك</b> (أو سعر البيع كامل كربح) ليُضاف مباشرة إلى صافي أرباحك.
+      </div>
+
+      <label>حالة الجهاز</label>
+      <div class="cond-row">
+        <div class="cond-btn active-new" id="btnNew" onclick="setCond('new')">
+          <i data-lucide="sparkles" class="ico-sm"></i>
+          <span>جديد (New)</span>
+        </div>
+        <div class="cond-btn" id="btnUsed" onclick="setCond('used')">
+          <i data-lucide="refresh-cw" class="ico-sm"></i>
+          <span>مستخدم (Used)</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>الشركة المصنعة</label>
+        <select id="brandSelect" onchange="updateModelsAndColors()">
+          <option value="Apple">Apple (آبل)</option>
+          <option value="Samsung">Samsung (سامسونج)</option>
+          <option value="Huawei">Huawei (هواوي)</option>
+          <option value="Other">أخرى / إكسسوارات</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>الموديل</label>
+        <select id="modelSelect"></select>
+        <input type="text" id="customModelInput" placeholder="أو اكتب اسم الموديل يدوياً هنا..." style="margin-top:7px;">
+      </div>
+
+      <div class="form-group">
+        <label>اللون</label>
+        <input type="text" id="colorInput" placeholder="اختر من الألوان أدناه أو اكتب اللون">
+        <div class="color-chips" id="colorChips"></div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>السعة التخزينية</label>
+          <select id="storageSelect">
+            <option>64GB</option><option>128GB</option><option selected>256GB</option>
+            <option>512GB</option><option>1TB</option><option>2TB</option><option>بدون سعة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>نسبة البطارية %</label>
+          <input type="number" id="batteryInput" value="100" min="1" max="100">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" id="priceAndSimRow">
+        <div class="form-group">
+          <label>نوع الشريحة</label>
+          <select id="simSelect">
+            <option>شريحة + eSIM</option><option>شريحتين (Dual Nano)</option>
+            <option>eSIM فقط</option><option>Wi-Fi فقط</option>
+          </select>
+        </div>
+        <div class="form-group" id="buyPriceGroup">
+          <label id="buyPriceLabel">التكلفة الإجمالية للكمية (JOD)</label>
+          <input type="number" id="buyPriceInput" placeholder="0.00" step="0.5" oninput="updateUnitCostPreview()">
+        </div>
+        <div class="form-group" id="consignmentProfitGroup" style="display:none;">
+          <label>ربحك المتوقع / العمولة للقطعة (JOD)</label>
+          <input type="number" id="consignmentProfitInput" placeholder="اختياري (يُحدد عند البيع)" step="0.5" min="0">
+        </div>
+      </div>
+
+      <div class="unit-cost-hint" id="unitCostPreview">
+        <span>تكلفة القطعة الواحدة:</span>
+        <span id="unitCostVal">0 JOD</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;" id="qtyAndDateRow">
+        <div class="form-group" id="qtyGroup">
+          <label>العدد / الكمية</label>
+          <input type="number" id="qtyInput" value="1" min="1" step="1" oninput="updateUnitCostPreview()">
+        </div>
+        <div class="form-group" id="dateGroup">
+          <label>تاريخ الإدخال</label>
+          <input type="date" id="dateInput">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>رقم IMEI / السيريال</label>
+        <div class="imei-row">
+          <input type="text" id="imeiInput" placeholder="اختياري أو امسح">
+          <button type="button" class="btn-scan" id="startScanBtn" onclick="startImeiScanner()" title="فتح الكاميرا لمسح الباركود أو IMEI">
+            <i data-lucide="scan-barcode" class="ico-sm"></i>
+            <span>مسح</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ملاحظات المنتج (اختياري)</label>
+        <textarea id="itemNoteInput" placeholder="مثال: كرتونة كاملة، خدش خفيف على الحافة، كفالة متبقية..."></textarea>
+      </div>
+
+      <div class="scanner-box" id="imeiScannerBox">
+        <div class="scanner-header">
+          <span style="display:inline-flex; align-items:center; gap:6px;">
+            <i data-lucide="camera" class="ico-sm"></i>
+            <span>وجّه الكاميرا نحو الباركود أو رمز IMEI</span>
+          </span>
+          <button type="button" class="btn btn-sm" style="background:#ef4444; color:#fff;" onclick="stopImeiScanner()">إغلاق الكاميرا</button>
+        </div>
+        <div id="imeiReader"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="saveItem()" id="saveItemBtn">
+        <i data-lucide="check-circle-2" class="ico"></i>
+        <span>حفظ في المخزون السحابي</span>
+      </button>
+      <button class="btn" id="cancelEditBtn" onclick="cancelEditAndBack()" style="display:none; margin-top:8px; background:#e2e8f0; color:#0f172a;">إلغاء التعديل والرجوع</button>
+    </div>
+  </div>
+
+  <!-- المبيعات والذمم -->
+  <div id="sec-sell" class="section">
+    <div class="card">
+      <h3 class="section-title" style="margin-bottom:13px;">
+        <i data-lucide="circle-dollar-sign" class="ico-lg" style="color:#059669;"></i>
+        <span>تسجيل عملية بيع</span>
+      </h3>
+      <div class="form-group">
+        <label>اختر الجهاز من المخزون</label>
+        <select id="sellItemSelect" onchange="updateSellHint()"></select>
+        <div id="sellItemBuyHint" style="font-size:11.5px; color:var(--muted); margin-top:5px; font-weight:700;"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label id="sellPriceLabel">سعر البيع (JOD)</label>
+          <input type="number" id="sellPriceInput" placeholder="0.00" step="0.5" oninput="syncConsignmentProfitDefault()">
+        </div>
+        <div class="form-group">
+          <label>طريقة الدفع</label>
+          <select id="payTypeSelect" onchange="toggleDebtFields()">
+            <option value="cash">كاش كامل</option>
+            <option value="debt">ذمم / دفعات مفتوحة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" id="sellConsignmentProfitBox" style="display:none; background:#ecfdf5; border:1px solid #86efac; padding:11px; border-radius:14px;">
+        <label style="color:#065f46;">ربحك / عمولتك من بيع هذا الجهاز الأمانة (JOD)</label>
+        <input type="number" id="sellConsignmentProfitInput" placeholder="مثال: اكتب ربحك أو اتركه مساوياً لسعر البيع" step="0.5" min="0">
+        <div style="font-size:11px; color:#047857; margin-top:4px; font-weight:700;">
+          يُضاف هذا المبلغ مباشرة إلى صافي أرباحك (إذا تركته فارغاً يُحتسب سعر البيع كاملاً كربح).
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>مدة الكفالة / الضمان (للفاتورة)</label>
+          <select id="sellWarrantySelect">
+            <option value="سنة كاملة (12 شهر)">سنة كاملة (12 شهر)</option>
+            <option value="6 أشهر">6 أشهر</option>
+            <option value="3 أشهر">3 أشهر</option>
+            <option value="30 يوم">30 يوم</option>
+            <option value="فحص تشغيلي 7 أيام" selected>فحص تشغيلي 7 أيام</option>
+            <option value="بدون كفالة">بدون كفالة</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>إصدار فاتورة بيع تلقائياً؟</label>
+          <select id="autoCreateSaleInvoice">
+            <option value="yes" selected>نعم، إصدار فاتورة PDF</option>
+            <option value="no">لا، تسجيل البيعة فقط</option>
+          </select>
+        </div>
+      </div>
+      <div id="debtFields" style="display:none; background:#fffbeb; padding:11px; border-radius:14px; margin-bottom:12px; border:1px solid #fde68a;">
+        <div style="font-size:11.5px; color:#92400e; font-weight:800; margin-bottom:9px;">
+          تبقى الذمة مفتوحة للدفعات حتى انتهاء السعر أو الضغط على "إغلاق"، ويُحسب الربح بعد تغطية سعر الشراء (أو حسب ربح العمولة للأمانة).
+        </div>
+        <div class="form-group">
+          <label>اسم العميل ورقم هاتفه</label>
+          <input type="text" id="custNameInput" placeholder="مثال: أحمد محمد - 079xxxxxxx">
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label>الدفعة الأولى المقبوضة (JOD)</label>
+            <input type="number" id="paidAmountInput" value="0" step="0.5" min="0">
+          </div>
+          <div class="form-group">
+            <label>تاريخ الاستحقاق القادم</label>
+            <input type="date" id="dueDateInput">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="completeSale()">
+        <i data-lucide="check" class="ico"></i>
+        <span>إتمام البيع</span>
+      </button>
+    </div>
+
+    <div class="section-head">
+      <h4 class="section-title" style="font-size:15px;">
+        <i data-lucide="clipboard-list" class="ico" style="color:#2563eb;"></i>
+        <span>سجل المبيعات والذمم</span>
+      </h4>
+    </div>
+    <div id="salesList"></div>
+  </div>
+
+  <!-- نظام الفواتير (بيع / شراء) -->
+  <div id="sec-invoices" class="section">
+    <div class="inv-total-bar" style="background: linear-gradient(135deg, #090d16 0%, #1e3a8a 65%, #2563eb 100%);">
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <i data-lucide="file-badge-2" class="ico"></i>
+        <span>نظام فواتير البيع والشراء (PDF + كفالة)</span>
+      </span>
+      <span style="color:#bfdbfe; font-size:13.5px;" id="invoicesSummaryBar">0 فاتورة</span>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:13px;">
+        <h3 class="section-title" id="invFormTitle">
+          <i data-lucide="file-plus-2" class="ico-lg" style="color:#2563eb;"></i>
+          <span>إنشاء فاتورة جديدة</span>
+        </h3>
+        <button type="button" class="btn btn-sm" id="resetInvFormBtn" onclick="resetInvoiceForm()" style="display:none; background:#f1f5f9; color:#0f172a; border:1px solid var(--border);">
+          <span>فاتورة جديدة</span>
+        </button>
+      </div>
+
+      <input type="hidden" id="editInvoiceId">
+
+      <label>نوع الفاتورة</label>
+      <div class="cond-row">
+        <div class="cond-btn active-sale" id="btnInvSale" onclick="setInvoiceType('sale')">
+          <i data-lucide="badge-dollar-sign" class="ico-sm"></i>
+          <span>فاتورة بيع</span>
+        </div>
+        <div class="cond-btn" id="btnInvPurchase" onclick="setInvoiceType('purchase')">
+          <i data-lucide="shopping-bag" class="ico-sm"></i>
+          <span>فاتورة شراء</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>رقم الفاتورة</label>
+          <input type="text" id="invNumberInput" placeholder="تلقائي أو اكتب رقم الفاتورة">
+        </div>
+        <div class="form-group">
+          <label>تاريخ الفاتورة</label>
+          <input type="date" id="invDateInput">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label id="invPartyLabel">اسم العميل / الهاتف</label>
+          <input type="text" id="invPartyInput" placeholder="مثال: سامر العلي - 079xxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>مدة الكفالة / الضمان</label>
+          <select id="invWarrantySelect" onchange="toggleCustomWarranty()">
+            <option value="سنة كاملة (12 شهر)">سنة كاملة (12 شهر)</option>
+            <option value="6 أشهر">6 أشهر</option>
+            <option value="3 أشهر">3 أشهر</option>
+            <option value="30 يوم">30 يوم</option>
+            <option value="فحص تشغيلي 7 أيام" selected>فحص تشغيلي 7 أيام</option>
+            <option value="بدون كفالة">بدون كفالة</option>
+            <option value="custom">مدة مخصصة...</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" id="customWarrantyGroup" style="display:none;">
+        <label>اكتب مدة الكفالة المخصصة</label>
+        <input type="text" id="invCustomWarrantyInput" placeholder="مثال: كفالة بطارية 3 أشهر وشاشة شهر">
+      </div>
+
+      <div class="form-group">
+        <label>اسم الصنف / الجهاز والمواصفات</label>
+        <input type="text" id="invItemTitleInput" placeholder="مثال: iPhone 17 Pro Max 256GB تيتانيوم صحراوي">
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+        <div class="form-group">
+          <label>الكمية</label>
+          <input type="number" id="invQtyInput" value="1" min="1" step="1" oninput="updateInvoiceTotalPreview()">
+        </div>
+        <div class="form-group">
+          <label>سعر الوحدة (JOD)</label>
+          <input type="number" id="invUnitPriceInput" placeholder="0.00" step="0.5" min="0" oninput="updateInvoiceTotalPreview()">
+        </div>
+        <div class="form-group">
+          <label>خصم (JOD)</label>
+          <input type="number" id="invDiscountInput" value="0" step="0.5" min="0" oninput="updateInvoiceTotalPreview()">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>رقم IMEI / السيريال</label>
+          <input type="text" id="invImeiInput" placeholder="اختياري">
+        </div>
+        <div class="form-group">
+          <label>حالة الدفع</label>
+          <select id="invPayStatusSelect">
+            <option value="مدفوعة بالكامل">مدفوعة بالكامل</option>
+            <option value="دفعة أولى / ذمم">دفعة أولى / ذمم</option>
+            <option value="آجلة">آجلة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>شروط الكفالة أو ملاحظات الفاتورة</label>
+        <textarea id="invNotesInput" placeholder="مثال: الكفالة تشمل العيوب المصنعية ولا تشمل الكسر أو السوائل..."></textarea>
+      </div>
+
+      <div class="unit-cost-hint" style="display:flex; background:#eff6ff; border-color:#bfdbfe; color:#1e3a8a;">
+        <span>الإجمالي الصافي للفاتورة:</span>
+        <span id="invNetPreview" style="font-size:14px; font-weight:900;">0 JOD</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.3fr 0.7fr; gap:8px;">
+        <button class="btn btn-primary" onclick="saveInvoice(false)" id="saveInvBtn">
+          <i data-lucide="save" class="ico"></i>
+          <span>حفظ الفاتورة</span>
+        </button>
+        <button class="btn btn-blue" onclick="saveInvoice(true)">
+          <i data-lucide="printer" class="ico"></i>
+          <span>حفظ وطباعة PDF</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h4 class="section-title" style="font-size:15px;">
+        <i data-lucide="files" class="ico" style="color:#2563eb;"></i>
+        <span>سجل الفواتير الصادرة</span>
+      </h4>
+      <div style="display:flex; gap:5px;">
+        <button class="btn btn-xs btn-dark" onclick="setInvoiceFilter('all')" id="invf-all">الكل</button>
+        <button class="btn btn-xs" style="background:#fff; border:1px solid var(--border);" onclick="setInvoiceFilter('sale')" id="invf-sale">بيع</button>
+        <button class="btn btn-xs" style="background:#fff; border:1px solid var(--border);" onclick="setInvoiceFilter('purchase')" id="invf-purchase">شراء</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <input type="text" id="searchInvoices" placeholder="ابحث برقم الفاتورة، العميل/المورد، الصنف، أو IMEI..." onkeyup="renderInvoices()">
+    </div>
+    <div id="invoicesList"></div>
+  </div>
+
+  <!-- قائمة الربح الخارجي -->
+  <div id="sec-extra" class="section">
+    <div class="inv-total-bar" style="background: linear-gradient(135deg, #064e3b 0%, #059669 100%);">
+      <span style="display:inline-flex; align-items:center; gap:6px;">
+        <i data-lucide="trending-up" class="ico"></i>
+        <span>إجمالي الربح الخارجي (يُضاف للأرباح):</span>
+      </span>
+      <span style="color:#d1fae5; font-size:15px;" id="extraTotalBar">+0 JOD</span>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-bottom:13px;">
+        <i data-lucide="badge-plus" class="ico-lg" style="color:#059669;"></i>
+        <span>إضافة ربح خارجي جديد</span>
+      </h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>قيمة الربح الخارجي (JOD)</label>
+          <input type="number" id="extraAmountInput" placeholder="0.00" step="0.5" min="0">
+        </div>
+        <div class="form-group">
+          <label>التاريخ</label>
+          <input type="date" id="extraDateInput">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>ملاحظات / مصدر الربح الخارجي</label>
+        <textarea id="extraNoteInput" placeholder="اكتب ملاحظات واضحة حول هذا الربح الخارجي (مثال: عمولة تحويل، خدمة صيانة، أرباح إضافية...)"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="addExtraIncome()">
+        <i data-lucide="plus-circle" class="ico"></i>
+        <span>إضافة إلى الربح</span>
+      </button>
+    </div>
+
+    <div class="section-head">
+      <h4 class="section-title" style="font-size:15px;">
+        <i data-lucide="list-checks" class="ico" style="color:#059669;"></i>
+        <span>سجل الأرباح الخارجية والملاحظات</span>
+      </h4>
+    </div>
+    <div id="extraIncomeList"></div>
+  </div>
+
+  <!-- المصروفات -->
+  <div id="sec-exp" class="section">
+    <div class="inv-total-bar" style="background: linear-gradient(135deg, #78350f 0%, #b45309 100%);">
+      <span>إجمالي المصروفات (يُخصم من الأرباح فقط):</span>
+      <span style="color:#fde68a; font-size:15px;" id="expTotalBar">0 JOD</span>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title" style="margin-bottom:13px;">
+        <i data-lucide="receipt" class="ico-lg" style="color:#d97706;"></i>
+        <span>تسجيل مصروف جديد</span>
+      </h3>
+      <div class="form-group">
+        <label>سبب الصرف / البيان</label>
+        <input type="text" id="expReasonInput" placeholder="مثال: إيجار المحل، كهرباء، صيانة، مواصلات...">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>قيمة المصروف (JOD)</label>
+          <input type="number" id="expAmountInput" placeholder="0.00" step="0.5" min="0">
+        </div>
+        <div class="form-group">
+          <label>تاريخ الصرف</label>
+          <input type="date" id="expDateInput">
+        </div>
+      </div>
+      <button class="btn btn-dark" onclick="addExpense()">
+        <i data-lucide="plus-circle" class="ico"></i>
+        <span>إضافة المصروف</span>
+      </button>
+    </div>
+
+    <div class="section-head">
+      <h4 class="section-title" style="font-size:15px;">
+        <i data-lucide="clipboard-list" class="ico" style="color:#d97706;"></i>
+        <span>سجل المصروفات</span>
+      </h4>
+    </div>
+    <div id="expensesList"></div>
+  </div>
+</div>
+
+<!-- نافذة تعديل / إضافة ملاحظة منتج سريعة -->
+<div id="editItemNoteModal" class="modal" onclick="if(event.target === this) closeEditItemNoteModal()">
+  <div class="modal-content" style="max-width:440px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; font-size:15.5px; font-weight:900;">ملاحظة المنتج</h3>
+        <div style="font-size:12px; color:var(--muted);" id="editNoteProductTitle"></div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeEditItemNoteModal()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <input type="hidden" id="editNoteItemId">
+    <div class="form-group">
+      <label>نص الملاحظة</label>
+      <textarea id="editNoteTextarea" placeholder="اكتب ملاحظتك حول المنتج هنا..."></textarea>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveItemNoteFromModal()">
+        <i data-lucide="check" class="ico"></i>
+        <span>حفظ الملاحظة</span>
+      </button>
+      <button class="btn btn-danger" style="width:auto;" onclick="clearItemNoteFromModal()">
+        <i data-lucide="trash-2" class="ico-sm"></i>
+        <span>حذف</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة كشف مصادر صافي الأرباح وطباعتها PDF -->
+<div id="profitReportModal" class="modal" onclick="if(event.target === this) closeProfitReport()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:9px;">
+        <div class="apex-mark-wrap shop-logo-box" style="width:62px; height:44px; border-radius:11px;" data-logo-slot="profit"></div>
+        <div>
+          <h3 style="margin:0; font-weight:900; font-size:15.5px;">Apex JO - كشف مصادر صافي الأرباح</h3>
+          <div style="font-size:11px; color:var(--muted);" id="profitReportDate"></div>
+        </div>
+      </div>
+      <button class="no-print btn btn-sm" style="background:#f1f5f9;" onclick="closeProfitReport()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <div id="profitReportBody"></div>
+
+    <div class="no-print" style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-pdf" style="flex:1;" onclick="printProfitPdf()">
+        <i data-lucide="printer" class="ico-sm"></i>
+        <span>حفظ كملف PDF / طباعة</span>
+      </button>
+      <button class="btn" style="width:auto; background:#e2e8f0; color:#0f172a;" onclick="closeProfitReport()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة معاينة وطباعة الفاتورة PDF -->
+<div id="invoicePreviewModal" class="modal" onclick="if(event.target === this) closeInvoicePreview()">
+  <div class="modal-content">
+    <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid var(--border); margin-bottom:8px;">
+      <span style="font-weight:900; font-size:14px;">معاينة الفاتورة الرسمية</span>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeInvoicePreview()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <div id="invoicePreviewBody"></div>
+
+    <div class="no-print" style="display:flex; gap:8px; margin-top:16px; flex-wrap:wrap;">
+      <button class="btn btn-pdf" style="flex:1;" onclick="printInvoicePdf()">
+        <i data-lucide="printer" class="ico-sm"></i>
+        <span>حفظ PDF / طباعة</span>
+      </button>
+      <button class="btn btn-sm" style="background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0; padding:9px 12px;" id="shareInvoiceTextBtn">
+        <i data-lucide="share-2" class="ico-sm"></i>
+        <span>نسخ ملخص</span>
+      </button>
+      <button class="btn" style="width:auto; background:#e2e8f0; color:#0f172a; padding:9px 14px;" onclick="closeInvoicePreview()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تعديل ربح خارجي -->
+<div id="editExtraModal" class="modal" onclick="if(event.target === this) closeEditExtraModal()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; font-size:16px; font-weight:900;">تعديل الربح الخارجي</h3>
+        <div style="font-size:12px; color:var(--muted);">يتم تحديث صافي الأرباح فوراً بعد الحفظ</div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeEditExtraModal()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <input type="hidden" id="editExtraId">
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-group">
+        <label>قيمة الربح الخارجي (JOD)</label>
+        <input type="number" id="editExtraAmountInput" step="0.5" min="0">
+      </div>
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="editExtraDateInput">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>ملاحظات / مصدر الربح الخارجي</label>
+      <textarea id="editExtraNoteInput" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveExtraIncomeEdit()">
+        <i data-lucide="check" class="ico"></i>
+        <span>حفظ التعديلات</span>
+      </button>
+      <button class="btn" style="background:#e2e8f0; color:#0f172a; width:auto;" onclick="closeEditExtraModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة دفعات الإكسسوارات المجمّعة -->
+<div id="batchModal" class="modal" onclick="if(event.target === this) closeBatchModal()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; font-size:16px; font-weight:900;">دفعات الإكسسوارات (تصفية التكلفة)</h3>
+        <div style="font-size:11.5px; color:var(--muted);">يُخصم المحصّل من تكلفة الدفعة أولاً؛ وبعد تغطية التكلفة يصبح كل تحصيل ربحاً صافياً</div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBatchModal()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1.4fr 1fr 0.9fr; gap:8px;">
+      <div class="form-group">
+        <label>اسم الدفعة</label>
+        <input type="text" id="batchTitleInput" placeholder="مثال: كفرات وشواحن">
+      </div>
+      <div class="form-group">
+        <label>تكلفة الدفعة (JOD)</label>
+        <input type="number" id="batchCostInput" placeholder="1000" step="0.5" min="0">
+      </div>
+      <div class="form-group">
+        <label>عدد القطع</label>
+        <input type="number" id="batchQtyInput" placeholder="10" min="1" step="1" value="1">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="createAccessoryBatch()">
+      <i data-lucide="plus-circle" class="ico"></i>
+      <span>إنشاء الدفعة وإضافة قطعها للمخزون</span>
+    </button>
+
+    <h4 style="margin:16px 0 8px; font-size:14px; font-weight:900;">متابعة الدفعات وأرباحها</h4>
+    <div id="batchesListBody"></div>
+  </div>
+</div>
+
+<!-- نافذة تأكيد حذف البيعة -->
+<div id="confirmDeleteSaleModal" class="modal" onclick="if(event.target === this) cancelDeleteSale()">
+  <div class="modal-content confirm-box">
+    <div style="width:48px; height:48px; border-radius:16px; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">
+      <i data-lucide="alert-triangle" class="ico-lg"></i>
+    </div>
+    <h3 style="margin:0 0 8px; color:#991b1b; font-weight:900;">تأكيد حذف البيعة</h3>
+    <p id="confirmDeleteSaleText" style="margin:0; font-size:13px; color:var(--text); line-height:1.6; font-weight:700;"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-danger" onclick="confirmDeleteSaleYes()">نعم</button>
+      <button class="btn" style="background:#e2e8f0; color:#0f172a;" onclick="cancelDeleteSale()">لا</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تعديل مصروف -->
+<div id="editExpenseModal" class="modal" onclick="if(event.target === this) closeEditExpenseModal()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; font-size:16px; font-weight:900;">تعديل مصروف</h3>
+        <div style="font-size:12px; color:var(--muted);">يتم تحديث صافي الأرباح فوراً بعد الحفظ</div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeEditExpenseModal()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <input type="hidden" id="editExpenseId">
+
+    <div class="form-group">
+      <label>سبب الصرف / البيان</label>
+      <input type="text" id="editExpReasonInput" placeholder="سبب الصرف">
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-group">
+        <label>قيمة المصروف (JOD)</label>
+        <input type="number" id="editExpAmountInput" step="0.5" min="0">
+      </div>
+      <div class="form-group">
+        <label>تاريخ الصرف</label>
+        <input type="date" id="editExpDateInput">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveExpenseEdit()">
+        <i data-lucide="check" class="ico"></i>
+        <span>حفظ التعديلات</span>
+      </button>
+      <button class="btn" style="background:#e2e8f0; color:#0f172a; width:auto;" onclick="closeEditExpenseModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تعديل عملية بيع -->
+<div id="editSaleModal" class="modal" onclick="if(event.target === this) closeEditSaleModal()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid var(--border); padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; font-size:16px; font-weight:900;">تعديل عملية بيع</h3>
+        <div style="font-size:12px; color:var(--muted);" id="editSaleDeviceInfo"></div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeEditSaleModal()">
+        <i data-lucide="x" class="ico-sm"></i>
+      </button>
+    </div>
+
+    <input type="hidden" id="editSaleId">
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+      <div class="form-group">
+        <label>السعر المتفق عليه (اختياري للذمم)</label>
+        <input type="number" id="editSellPriceInput" step="0.5">
+      </div>
+      <div class="form-group">
+        <label>طريقة الدفع</label>
+        <select id="editPayTypeSelect" onchange="toggleEditSaleDebtFields()">
+          <option value="cash">كاش كامل</option>
+          <option value="debt">ذمم / دفعات مفتوحة</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" id="editSaleConsignmentGroup" style="display:none; background:#ecfdf5; border:1px solid #86efac; padding:10px; border-radius:12px;">
+      <label style="color:#065f46;">ربحك / عمولتك من هذا الجهاز الأمانة (JOD)</label>
+      <input type="number" id="editConsignmentProfitInput" step="0.5" min="0">
+    </div>
+
+    <div class="form-group">
+      <label>اسم العميل</label>
+      <input type="text" id="editCustNameInput">
+    </div>
+
+    <div id="editSaleDebtFields" style="display:none; background:#fffbeb; padding:10px; border-radius:12px; margin-bottom:12px; border:1px solid #fde68a;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>إجمالي المحصّل (JOD)</label>
+          <input type="number" id="editPaidAmountInput" step="0.5">
+        </div>
+        <div class="form-group">
+          <label>تاريخ الاستحقاق</label>
+          <input type="date" id="editDueDateInput">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>تاريخ البيعة</label>
+      <input type="date" id="editSaleDateInput">
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:14px;">
+      <button class="btn btn-primary" onclick="saveSaleEdit()">
+        <i data-lucide="check" class="ico"></i>
+        <span>حفظ التعديلات</span>
+      </button>
+      <button class="btn" style="background:#e2e8f0; color:#0f172a; width:auto;" onclick="closeEditSaleModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تفاصيل الذمم والدفعات الجارية -->
+<div id="debtsModal" class="modal" onclick="if(event.target === this) closeDebtsModal()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1.5px solid #fecaca; padding-bottom:11px; margin-bottom:13px;">
+      <div>
+        <h3 style="margin:0; color:#991b1b; font-size:16px; font-weight:900;">الذمم والدفعات الجارية</h3>
+        <div style="font-size:12px; color:var(--muted);" id="debtsModalTotal"></div>
+      </div>
+      <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeDebtsModal()">
+        <i data-lucide="arrow-right" class="ico-sm"></i>
+        <span>رجوع</span>
+      </button>
+    </div>
+    <div id="debtsModalBody"></div>
+  </div>
+</div>
+
+<!-- نافذة كشف الـ PDF -->
+<div id="pdfModal" class="modal" onclick="if(event.target === this) closePdf()">
+  <div class="modal-content">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0f172a; padding-bottom:10px;">
+      <div>
+        <h3 style="margin:0; font-weight:900;">Apex JO - كشف المخزون المتوفر</h3>
+        <div style="font-size:11px; color:var(--muted);" id="pdfDate"></div>
+      </div>
+      <div class="apex-mark-wrap" style="width:60px; height:40px; border-radius:10px;" data-logo-slot="stockPdf"></div>
+    </div>
+
+    <div id="pdfBody"></div>
+
+    <div class="no-print" style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn btn-pdf" style="flex:1;" onclick="printStockPdf()">
+        <i data-lucide="printer" class="ico-sm"></i>
+        <span>حفظ كملف PDF / طباعة</span>
+      </button>
+      <button class="btn" style="width:auto; background:#e2e8f0; color:#0f172a;" onclick="closePdf()">رجوع</button>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button class="nav-item active" onclick="switchTab('home')" id="nav-home">
+    <span class="nav-icon"><i data-lucide="layout-dashboard" class="ico"></i></span>
+    <span>الرئيسية</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('inv')" id="nav-inv">
+    <span class="nav-icon"><i data-lucide="package" class="ico"></i></span>
+    <span>المخزون</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('add', true)" id="nav-add">
+    <span class="nav-icon"><i data-lucide="plus-circle" class="ico"></i></span>
+    <span>إضافة</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('sell')" id="nav-sell">
+    <span class="nav-icon"><i data-lucide="circle-dollar-sign" class="ico"></i></span>
+    <span>المبيعات</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('invoices')" id="nav-invoices">
+    <span class="nav-icon"><i data-lucide="file-badge-2" class="ico"></i></span>
+    <span>الفواتير</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('extra')" id="nav-extra">
+    <span class="nav-icon"><i data-lucide="badge-plus" class="ico"></i></span>
+    <span>ربح خارجي</span>
+  </button>
+  <button class="nav-item" onclick="switchTab('exp')" id="nav-exp">
+    <span class="nav-icon"><i data-lucide="receipt" class="ico"></i></span>
+    <span>المصروفات</span>
+  </button>
+</nav>
+
+<script>
+// ضع رابط صورة اللوجو هنا إذا رفعتها على رابط مباشر، أو اتركه فارغاً لاستخدام شعار APEX المدمج المطابق للصورة
+const SHOP_LOGO_SRC = "";
+
+function getApexLogoMarkup() {
+  if (SHOP_LOGO_SRC && SHOP_LOGO_SRC.trim()) {
+    return `<img src="${escapeHtml(SHOP_LOGO_SRC.trim())}" alt="Apex JO Logo">`;
+  }
+  return `
+    <svg viewBox="0 0 220 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Apex JO">
+      <rect width="220" height="140" fill="#050505"/>
+      <g transform="translate(10, 8)">
+        <!-- قمة المثلث الحمراء (العلم الأردني) -->
+        <polygon points="100,6 116,38 106,38 100,24 94,38 84,38" fill="#c8102e"/>
+        <!-- القوس الأبيض الداخلي -->
+        <polygon points="100,25 128,84 114,84 100,50 86,84 72,84" fill="#ffffff"/>
+        <!-- حرف A الأخضر والأبيض -->
+        <polygon points="56,34 86,112 71,112 52,62 28,112 13,112" fill="#007a3d"/>
+        <polygon points="94,36 125,112 110,112 91,63 67,112 53,112" fill="#ffffff"/>
+        <polygon points="34,88 78,88 73,99 30,99" fill="#007a3d"/>
+        <!-- حرف P الأخضر -->
+        <path d="M98,42 L134,42 C148,42 155,50 155,62 C155,74 148,82 134,82 L113,82 L113,112 L98,112 Z M113,53 L113,71 L132,71 C138,71 141,68 141,62 C141,56 138,53 132,53 Z" fill="#007a3d"/>
+        <!-- حرف E الأخضر -->
+        <polygon points="122,42 166,42 166,53 136,53 136,71 162,71 162,82 136,82 136,101 167,101 167,112 122,112" fill="#007a3d"/>
+        <!-- حرف X الأبيض -->
+        <polygon points="154,68 169,68 178,82 187,68 201,68 186,90 202,112 187,112 178,98 168,112 153,112 170,90" fill="#ffffff"/>
+      </g>
+    </svg>
+  `;
+}
+
+function renderBrandLogos() {
+  const markup = getApexLogoMarkup();
+  document.querySelectorAll('[data-logo-slot]').forEach(el => {
+    el.innerHTML = markup;
+  });
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDysYJttCRQ38oZVoQWsFg5iU8yn_LQAeM",
+  authDomain: "apex-jo.firebaseapp.com",
+  databaseURL: "https://apex-jo-default-rtdb.firebaseio.com",
+  projectId: "apex-jo",
+  storageBucket: "apex-jo.firebasestorage.app",
+  messagingSenderId: "702468166947",
+  appId: "1:702468166947:web:209c8dff8836d1135fe896",
+  measurementId: "G-QERSPYFYP6"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let currentUser = null;
+let inventory = [];
+let sales = [];
+let expenses = [];
+let extraIncomes = [];
+let invoices = [];
+let batches = [];
+let currentFundingSource = 'own';
+let currentCond = 'new';
+let currentFilter = 'all';
+let currentInvoiceType = 'sale';
+let currentInvoiceFilter = 'all';
+let tabHistory = ['home'];
+let imeiScanner = null;
+let pendingDeleteSaleId = null;
+let toastTimer = null;
+
+function refreshIcons() {
+  renderBrandLogos();
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    window.lucide.createIcons();
+  }
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toastBanner');
+  el.innerText = msg;
+  el.style.display = 'block';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.display = 'none';
+  }, 2400);
+}
+
+function formatJod(num) {
+  const n = Number(num || 0);
+  if (Number.isNaN(n)) return 0;
+  return Number.isInteger(n) ? n : Number(n.toFixed(2));
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const catalog = {
+  Apple: [
+    "iPhone 18 Pro Max","iPhone 18 Pro","iPhone 18 Air","iPhone 18",
+    "iPhone 17 Pro Max","iPhone 17 Pro","iPhone 17 Air","iPhone 17",
+    "iPhone 16 Pro Max","iPhone 16 Pro","iPhone 16 Plus","iPhone 16","iPhone 16e",
+    "iPhone 15 Pro Max","iPhone 15 Pro","iPhone 15 Plus","iPhone 15",
+    "iPhone 14 Pro Max","iPhone 14 Pro","iPhone 14 Plus","iPhone 14",
+    "iPhone 13 Pro Max","iPhone 13 Pro","iPhone 13","iPhone 13 Mini",
+    "iPhone 12 Pro Max","iPhone 12 Pro","iPhone 12","iPhone 11 Pro Max","iPhone 11",
+    "iPad Pro 13 (M4/M5)","iPad Pro 11 (M4/M5)","iPad Air 13","iPad Air 11","iPad Mini 7","iPad 10th Gen",
+    "Apple Watch Ultra 2/3","Apple Watch Series 10/11","Apple Watch SE",
+    "AirPods Pro 2","AirPods 4","AirPods Max","Apple Pencil Pro"
+  ],
+  Samsung: [
+    "Galaxy S26 Ultra","Galaxy S26+","Galaxy S26",
+    "Galaxy S25 Ultra","Galaxy S25+","Galaxy S25","Galaxy S25 Edge",
+    "Galaxy S24 Ultra","Galaxy S24+","Galaxy S24","Galaxy S24 FE",
+    "Galaxy S23 Ultra","Galaxy Z Fold 6/7","Galaxy Z Flip 6/7",
+    "Galaxy A56","Galaxy A55","Galaxy A35","Galaxy Tab S10 Ultra","Galaxy Watch Ultra"
+  ],
+  Huawei: [
+    "Mate XT Ultimate","Mate X6","Pura 70 Ultra","Pura 70 Pro","Pura 70",
+    "Mate 60 Pro","Nova 13 Pro","Nova 12s","MatePad Pro 13.2","Watch GT 5 Pro"
+  ],
+  Other: ["شاحن أصلي","كفر حماية","سماعة سلكية","ساعة ذكية أخرى"]
+};
+
+const brandColors = {
+  Apple: [
+    {n:"تيتانيوم صحراوي",c:"#c5b398"},{n:"تيتانيوم طبيعي",c:"#9a9893"},
+    {n:"تيتانيوم أبيض",c:"#f2f1ed"},{n:"تيتانيوم أسود",c:"#2b2b2c"},
+    {n:"أزرق نيلي",c:"#3b5998"},{n:"أخضر تيل",c:"#2c6e63"},
+    {n:"وردي",c:"#f4c2c2"},{n:"أسود سبيس",c:"#1d1d1f"},{n:"فضي",c:"#e3e4e5"}
+  ],
+  Samsung: [
+    {n:"تيتانيوم فضي أزرق",c:"#7c94a8"},{n:"تيتانيوم أسود",c:"#222326"},
+    {n:"تيتانيوم رمادي",c:"#7d7d7d"},{n:"بنفسجي",c:"#6c5ce7"},{n:"أخضر نعناعي",c:"#a8e6cf"}
+  ],
+  Huawei: [
+    {n:"أسود ملكي",c:"#18181b"},{n:"أبيض لؤلؤي",c:"#fafafa"},
+    {n:"أخضر زمردي",c:"#047857"},{n:"أحمر",c:"#b91c1c"}
+  ],
+  Other: [{n:"أسود",c:"#000000"},{n:"أبيض",c:"#ffffff"}]
+};
+
+function isItemUsed(item) {
+  const raw = String(item?.cond || item?.condition || item?.status || item?.state || '').trim().toLowerCase();
+  return raw === 'used' || raw.includes('مستخدم') || raw.includes('مستعمل');
+}
+
+function isConsignmentItem(item) {
+  return item?.fundingSource === 'consignment' || item?.isConsignment === true;
+}
+
+function getItemSortKey(item) {
+  if (typeof item?.sortOrder === 'number') return item.sortOrder;
+  const numPart = parseInt(String(item?.id || '').replace(/\D/g, ''), 10);
+  return isNaN(numPart) ? 0 : numPart;
+}
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('authScreen').style.display = 'none';
+    listenData();
+  } else {
+    document.getElementById('authScreen').style.display = 'flex';
+    refreshIcons();
+  }
+});
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  document.getElementById('loginBtn').innerText = "جاري الدخول...";
+  auth.signInWithEmailAndPassword(email, pass).catch(() => {
+    document.getElementById('authErr').innerText = "خطأ في البريد أو كلمة السر";
+    document.getElementById('loginBtn').innerText = "تسجيل الدخول";
+  });
+}
+
+function recalculateAllSalesProfits() {
+  const batchCollectedMap = {};
+  sales.forEach(s => {
+    if (s.item && s.item.batchId) {
+      batchCollectedMap[s.item.batchId] = (batchCollectedMap[s.item.batchId] || 0) + Number(s.sellPrice || 0);
+    }
+  });
+
+  const batchNetMap = {};
+  batches.forEach(b => {
+    const collected = batchCollectedMap[b.id] || 0;
+    batchNetMap[b.id] = collected - Number(b.totalCost || 0);
+  });
+
+  const batchAppliedNet = {};
+  const orderedAsc = [...sales].reverse();
+
+  orderedAsc.forEach(s => {
+    if (s.item && s.item.batchId) {
+      const bId = s.item.batchId;
+      const totalBatchNet = batchNetMap[bId] || 0;
+      const prevApplied = batchAppliedNet[bId] || 0;
+      const remainingToAssign = totalBatchNet - prevApplied;
+      const thisSaleShare = Math.min(Number(s.sellPrice || 0), Math.max(0, remainingToAssign));
+      s.profit = formatJod(thisSaleShare);
+      batchAppliedNet[bId] = prevApplied + thisSaleShare;
+    } else if (isConsignmentItem(s.item)) {
+      const agreedProfit = (s.consignmentProfit !== undefined && s.consignmentProfit !== null && s.consignmentProfit !== '')
+        ? Number(s.consignmentProfit)
+        : Number(s.sellPrice || 0);
+      if (s.payType === 'debt' && !s.isSettled) {
+        const sellTotal = Number(s.sellPrice || 0);
+        const paidAmt = Number(s.paid || 0);
+        if (sellTotal > 0) {
+          const ratio = Math.min(1, Math.max(0, paidAmt / sellTotal));
+          s.profit = formatJod(agreedProfit * ratio);
+        } else {
+          s.profit = formatJod(Math.min(agreedProfit, paidAmt));
+        }
+      } else {
+        s.profit = formatJod(agreedProfit);
+      }
+    } else if (s.payType === 'debt') {
+      const buyP = Number(s.item?.buyPrice || 0);
+      const paidAmt = Number(s.paid || 0);
+      s.profit = formatJod(Math.max(0, paidAmt - buyP));
+    } else {
+      const buyP = Number(s.item?.buyPrice || 0);
+      s.profit = formatJod(Number(s.sellPrice || 0) - buyP);
+    }
+  });
+}
+
+function syncDebtTotalsFromPayments(s) {
+  const paymentsList = Array.isArray(s.payments) ? s.payments : [];
+  const totalPaid = formatJod(paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0));
+  const buyPrice = isConsignmentItem(s.item) ? 0 : formatJod(s.item?.buyPrice || 0);
+  const agreedPrice = formatJod(s.sellPrice || 0);
+
+  s.paid = totalPaid;
+
+  if (s.isSettled) {
+    s.remaining = 0;
+    if (agreedPrice < totalPaid) {
+      s.sellPrice = totalPaid;
+    }
+  } else if (agreedPrice > 0) {
+    if (totalPaid >= agreedPrice) {
+      s.isSettled = true;
+      s.remaining = 0;
+    } else {
+      s.remaining = formatJod(agreedPrice - totalPaid);
+    }
+  } else {
+    s.remaining = formatJod(Math.max(0, buyPrice - totalPaid));
+  }
+}
+
+function listenData() {
+  const ref = db.ref('stores/' + currentUser.uid);
+  ref.on('value', snap => {
+    const data = snap.val() || {};
+    const rawInv = data.inventory ? Object.values(data.inventory) : [];
+    inventory = rawInv.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+    sales = data.sales ? Object.values(data.sales) : [];
+    sales.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+    const rawExp = data.expenses ? Object.values(data.expenses) : [];
+    expenses = rawExp.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+    const rawExtra = data.extraIncomes ? Object.values(data.extraIncomes) : [];
+    extraIncomes = rawExtra.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+    const rawInvoices = data.invoices ? Object.values(data.invoices) : [];
+    invoices = rawInvoices.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+    const rawBatches = data.batches ? Object.values(data.batches) : [];
+    batches = rawBatches.sort((a, b) => getItemSortKey(b) - getItemSortKey(a));
+
+    recalculateAllSalesProfits();
+    renderAll();
+
+    if (document.getElementById('debtsModal').style.display === 'flex') {
+      renderDebtsModalContent();
+    }
+    if (document.getElementById('batchModal').style.display === 'flex') {
+      renderBatchesModalContent();
+    }
+  });
+}
+
+function syncToCloud() {
+  recalculateAllSalesProfits();
+  renderAll();
+  if (document.getElementById('debtsModal').style.display === 'flex') {
+    renderDebtsModalContent();
+  }
+  if (document.getElementById('batchModal').style.display === 'flex') {
+    renderBatchesModalContent();
+  }
+
+  if (!currentUser) return;
+  const invObj = {};
+  const total = inventory.length;
+  inventory.forEach((item, index) => {
+    item.sortOrder = (total - index) * 1000;
+    invObj[item.id] = item;
+  });
+  const salObj = {}; sales.forEach(s => salObj[s.id] = s);
+  const expObj = {}; expenses.forEach(e => expObj[e.id] = e);
+  const extObj = {}; extraIncomes.forEach(ex => extObj[ex.id] = ex);
+  const invcObj = {}; invoices.forEach(iv => invcObj[iv.id] = iv);
+  const batObj = {}; batches.forEach(b => batObj[b.id] = b);
+
+  db.ref('stores/' + currentUser.uid).set({
+    inventory: invObj,
+    sales: salObj,
+    expenses: expObj,
+    extraIncomes: extObj,
+    invoices: invcObj,
+    batches: batObj
+  });
+}
+
+function moveItem(id, direction) {
+  const idx = inventory.findIndex(x => x.id === id);
+  if (idx === -1) return;
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= inventory.length) return;
+
+  const temp = inventory[idx];
+  inventory[idx] = inventory[targetIdx];
+  inventory[targetIdx] = temp;
+
+  syncToCloud();
+}
+
+function updateBackButton() {
+  const currentTab = tabHistory[tabHistory.length - 1];
+  const backBtn = document.getElementById('headerBackBtn');
+  backBtn.style.display = (tabHistory.length > 1 && currentTab !== 'home') ? 'inline-flex' : 'none';
+}
+
+function switchTab(tab, isNewAdd = false) {
+  if (tab !== 'add') stopImeiScanner();
+  const currentTab = tabHistory[tabHistory.length - 1];
+  if (currentTab !== tab) tabHistory.push(tab);
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  if (isNewAdd) resetForm();
+  if (tab === 'sell') updateSellHint();
+  if (tab === 'invoices' && !document.getElementById('invNumberInput').value.trim()) {
+    document.getElementById('invNumberInput').value = generateNextInvoiceNumber();
+  }
+  updateBackButton();
+  refreshIcons();
+}
+
+function goBack() {
+  stopImeiScanner();
+  if (document.getElementById('editItemNoteModal').style.display === 'flex') return closeEditItemNoteModal();
+  if (document.getElementById('profitReportModal').style.display === 'flex') return closeProfitReport();
+  if (document.getElementById('invoicePreviewModal').style.display === 'flex') return closeInvoicePreview();
+  if (document.getElementById('editExtraModal').style.display === 'flex') return closeEditExtraModal();
+  if (document.getElementById('batchModal').style.display === 'flex') return closeBatchModal();
+  if (document.getElementById('confirmDeleteSaleModal').style.display === 'flex') return cancelDeleteSale();
+  if (document.getElementById('editExpenseModal').style.display === 'flex') return closeEditExpenseModal();
+  if (document.getElementById('editSaleModal').style.display === 'flex') return closeEditSaleModal();
+  if (document.getElementById('pdfModal').style.display === 'flex') return closePdf();
+  if (document.getElementById('debtsModal').style.display === 'flex') return closeDebtsModal();
+
+  if (tabHistory.length > 1) {
+    tabHistory.pop();
+    const prevTab = tabHistory[tabHistory.length - 1];
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('sec-' + prevTab).classList.add('active');
+    document.getElementById('nav-' + prevTab).classList.add('active');
+  } else {
+    switchTab('home');
+  }
+  updateBackButton();
+  refreshIcons();
+}
+
+/* --- إدارة ملاحظات المنتج (إضافة / تعديل / حذف) --- */
+function openEditItemNoteModal(itemId) {
+  const item = inventory.find(x => x.id === itemId);
+  if (!item) return;
+
+  document.getElementById('editNoteItemId').value = item.id;
+  document.getElementById('editNoteProductTitle').innerText = `${item.model || 'جهاز'} (${item.storage || ''}) • ${item.color || ''}`;
+  document.getElementById('editNoteTextarea').value = item.note || '';
+  document.getElementById('editItemNoteModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeEditItemNoteModal() {
+  document.getElementById('editItemNoteModal').style.display = 'none';
+}
+
+function saveItemNoteFromModal() {
+  const itemId = document.getElementById('editNoteItemId').value;
+  const idx = inventory.findIndex(x => x.id === itemId);
+  if (idx === -1) return;
+
+  const noteVal = document.getElementById('editNoteTextarea').value.trim();
+  inventory[idx] = { ...inventory[idx], note: noteVal };
+  syncToCloud();
+  closeEditItemNoteModal();
+  showToast(noteVal ? "تم حفظ ملاحظة المنتج" : "تمت إزالة الملاحظة");
+}
+
+function clearItemNoteFromModal() {
+  const itemId = document.getElementById('editNoteItemId').value;
+  deleteItemNote(itemId);
+  closeEditItemNoteModal();
+}
+
+function deleteItemNote(itemId) {
+  const idx = inventory.findIndex(x => x.id === itemId);
+  if (idx === -1) return;
+  inventory[idx] = { ...inventory[idx], note: '' };
+  syncToCloud();
+  showToast("تم حذف ملاحظة المنتج");
+}
+
+/* --- تقرير مصادر صافي الأرباح وطباعته PDF --- */
+function openProfitReport() {
+  recalculateAllSalesProfits();
+
+  const curMonth = new Date().toISOString().slice(0, 7);
+  let salesProfit = 0, monthSalesProfit = 0;
+  sales.forEach(s => {
+    const p = Number(s.profit || 0);
+    salesProfit += p;
+    if ((s.date || '').startsWith(curMonth)) monthSalesProfit += p;
+  });
+
+  let totalExtra = 0, monthExtra = 0;
+  extraIncomes.forEach(ex => {
+    const amt = Number(ex.amount || 0);
+    totalExtra += amt;
+    if ((ex.date || '').startsWith(curMonth)) monthExtra += amt;
+  });
+
+  let totalExpenses = 0, monthExpenses = 0;
+  expenses.forEach(e => {
+    const amt = Number(e.amount || 0);
+    totalExpenses += amt;
+    if ((e.date || '').startsWith(curMonth)) monthExpenses += amt;
+  });
+
+  const netProfit = formatJod(salesProfit + totalExtra - totalExpenses);
+  const netMonthProfit = formatJod(monthSalesProfit + monthExtra - monthExpenses);
+
+  document.getElementById('profitReportDate').innerText =
+    `تاريخ التقرير: ${new Date().toLocaleDateString('ar-JO')} • صافي هذا الشهر: ${netMonthProfit} JOD`;
+
+  const salesRows = sales.map((s, idx) => {
+    const cons = isConsignmentItem(s.item);
+    const isBatch = !!(s.item && s.item.batchId);
+    const sourceLabel = isBatch ? 'دفعة إكسسوار' : (cons ? 'أمانة / عمولة' : 'مبيعات');
+    const p = formatJod(s.profit || 0);
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td><b>${escapeHtml(s.item?.model || 'جهاز')}</b><div style="font-size:10.5px; color:#64748b;">${escapeHtml(s.custName || '')} • ${escapeHtml(s.date || '-')}</div></td>
+        <td><span class="badge ${cons ? 'badge-consignment' : (isBatch ? 'badge-batch' : 'badge-new')}">${sourceLabel}</span></td>
+        <td>${formatJod(s.payType === 'debt' ? (s.paid || 0) : (s.sellPrice || 0))} JOD</td>
+        <td style="color:${p >= 0 ? '#059669' : '#dc2626'}; font-weight:900;">${p >= 0 ? '+' : ''}${p} JOD</td>
+      </tr>
+    `;
+  }).join('');
+
+  const extraRows = extraIncomes.map((ex, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(ex.note || 'ربح خارجي')}</td>
+      <td>${escapeHtml(ex.date || '-')}</td>
+      <td style="color:#059669; font-weight:900;">+${formatJod(ex.amount || 0)} JOD</td>
+    </tr>
+  `).join('');
+
+  const expRows = expenses.map((e, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(e.reason || 'مصروف')}</td>
+      <td>${escapeHtml(e.date || '-')}</td>
+      <td style="color:#b45309; font-weight:900;">-${formatJod(e.amount || 0)} JOD</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('profitReportBody').innerHTML = `
+    <div class="profit-summary-strip">
+      <div class="profit-box pos">
+        <div class="profit-box-label">أرباح المبيعات والذمم</div>
+        <div class="profit-box-val" style="color:#059669;">${formatJod(salesProfit) >= 0 ? '+' : ''}${formatJod(salesProfit)} JOD</div>
+      </div>
+      <div class="profit-box pos">
+        <div class="profit-box-label">الربح الخارجي (+)</div>
+        <div class="profit-box-val" style="color:#059669;">+${formatJod(totalExtra)} JOD</div>
+      </div>
+      <div class="profit-box neg">
+        <div class="profit-box-label">المصروفات (-)</div>
+        <div class="profit-box-val" style="color:#b45309;">-${formatJod(totalExpenses)} JOD</div>
+      </div>
+    </div>
+
+    <div style="padding:12px 14px; background:#0f172a; color:#fff; border-radius:14px; display:flex; justify-content:space-between; align-items:center; font-weight:900; margin-bottom:14px;">
+      <span>صافي الأرباح النهائي (مبيعات + خارجي - مصروفات)</span>
+      <span style="color:${netProfit >= 0 ? '#34d399' : '#f87171'}; font-size:17px;">${netProfit} JOD</span>
+    </div>
+
+    <h4 style="margin:12px 0 4px;">1. أرباح المبيعات والذمم والأمانات (${sales.length})</h4>
+    <table>
+      <thead>
+        <tr><th>#</th><th>الصنف / التاريخ</th><th>النوع</th><th>المحصّل</th><th>الربح</th></tr>
+      </thead>
+      <tbody>${salesRows || '<tr><td colspan="5">لا توجد مبيعات محققة ربحاً بعد</td></tr>'}</tbody>
+    </table>
+
+    <h4 style="margin:16px 0 4px;">2. الأرباح الخارجية المضافة (${extraIncomes.length})</h4>
+    <table>
+      <thead>
+        <tr><th>#</th><th>البيان / الملاحظات</th><th>التاريخ</th><th>القيمة</th></tr>
+      </thead>
+      <tbody>${extraRows || '<tr><td colspan="4">لا يوجد ربح خارجي</td></tr>'}</tbody>
+    </table>
+
+    <h4 style="margin:16px 0 4px;">3. المصروفات المخصومة (${expenses.length})</h4>
+    <table>
+      <thead>
+        <tr><th>#</th><th>سبب الصرف</th><th>التاريخ</th><th>القيمة</th></tr>
+      </thead>
+      <tbody>${expRows || '<tr><td colspan="4">لا توجد مصروفات</td></tr>'}</tbody>
+    </table>
+  `;
+
+  document.getElementById('profitReportModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeProfitReport() {
+  const m = document.getElementById('profitReportModal');
+  m.classList.remove('print-target');
+  m.style.display = 'none';
+}
+
+function printProfitPdf() {
+  document.getElementById('pdfModal').classList.remove('print-target');
+  document.getElementById('invoicePreviewModal').classList.remove('print-target');
+  document.getElementById('profitReportModal').classList.add('print-target');
+  window.print();
+}
+
+/* --- نظام الفواتير (بيع / شراء) --- */
+function generateNextInvoiceNumber() {
+  const seq = String(invoices.length + 1).padStart(4, '0');
+  const yr = new Date().getFullYear();
+  return `AJO-${yr}-${seq}`;
+}
+
+function setInvoiceType(type) {
+  currentInvoiceType = type === 'purchase' ? 'purchase' : 'sale';
+  document.getElementById('btnInvSale').className = 'cond-btn' + (currentInvoiceType === 'sale' ? ' active-sale' : '');
+  document.getElementById('btnInvPurchase').className = 'cond-btn' + (currentInvoiceType === 'purchase' ? ' active-purchase' : '');
+  document.getElementById('invPartyLabel').innerText =
+    currentInvoiceType === 'sale' ? 'اسم العميل / الهاتف' : 'اسم المورد / جهة الشراء';
+  document.getElementById('invPartyInput').placeholder =
+    currentInvoiceType === 'sale' ? 'مثال: سامر العلي - 079xxxxxxx' : 'مثال: شركة النور للهواتف';
+}
+
+function toggleCustomWarranty() {
+  const val = document.getElementById('invWarrantySelect').value;
+  document.getElementById('customWarrantyGroup').style.display = (val === 'custom') ? 'block' : 'none';
+}
+
+function getSelectedWarrantyValue() {
+  const sel = document.getElementById('invWarrantySelect').value;
+  if (sel === 'custom') {
+    return document.getElementById('invCustomWarrantyInput').value.trim() || 'كفالة مخصصة';
+  }
+  return sel;
+}
+
+function updateInvoiceTotalPreview() {
+  const qty = Math.max(1, parseInt(document.getElementById('invQtyInput').value, 10) || 1);
+  const unitPrice = Math.max(0, parseFloat(document.getElementById('invUnitPriceInput').value) || 0);
+  const discount = Math.max(0, parseFloat(document.getElementById('invDiscountInput').value) || 0);
+  const net = formatJod(Math.max(0, (qty * unitPrice) - discount));
+  document.getElementById('invNetPreview').innerText = `${net} JOD`;
+  return net;
+}
+
+function setInvoiceFilter(f) {
+  currentInvoiceFilter = f;
+  ['all', 'sale', 'purchase'].forEach(k => {
+    const btn = document.getElementById('invf-' + k);
+    btn.className = 'btn btn-xs' + (k === f ? ' btn-dark' : '');
+    if (k !== f) {
+      btn.style.background = '#fff';
+      btn.style.border = '1px solid var(--border)';
+    }
+  });
+  renderInvoices();
+}
+
+function resetInvoiceForm() {
+  document.getElementById('editInvoiceId').value = '';
+  document.getElementById('invFormTitle').innerHTML = `<i data-lucide="file-plus-2" class="ico-lg" style="color:#2563eb;"></i><span>إنشاء فاتورة جديدة</span>`;
+  document.getElementById('saveInvBtn').innerHTML = `<i data-lucide="save" class="ico"></i><span>حفظ الفاتورة</span>`;
+  document.getElementById('resetInvFormBtn').style.display = 'none';
+  setInvoiceType('sale');
+  document.getElementById('invNumberInput').value = generateNextInvoiceNumber();
+  document.getElementById('invDateInput').value = new Date().toISOString().split('T')[0];
+  document.getElementById('invPartyInput').value = '';
+  document.getElementById('invWarrantySelect').value = 'فحص تشغيلي 7 أيام';
+  document.getElementById('invCustomWarrantyInput').value = '';
+  toggleCustomWarranty();
+  document.getElementById('invItemTitleInput').value = '';
+  document.getElementById('invQtyInput').value = '1';
+  document.getElementById('invUnitPriceInput').value = '';
+  document.getElementById('invDiscountInput').value = '0';
+  document.getElementById('invImeiInput').value = '';
+  document.getElementById('invPayStatusSelect').value = 'مدفوعة بالكامل';
+  document.getElementById('invNotesInput').value = '';
+  updateInvoiceTotalPreview();
+  refreshIcons();
+}
+
+function saveInvoice(openPreviewAfter = false) {
+  const editId = document.getElementById('editInvoiceId').value;
+  const itemTitle = document.getElementById('invItemTitleInput').value.trim();
+  const qty = Math.max(1, parseInt(document.getElementById('invQtyInput').value, 10) || 1);
+  const unitPrice = formatJod(parseFloat(document.getElementById('invUnitPriceInput').value) || 0);
+  const discount = formatJod(parseFloat(document.getElementById('invDiscountInput').value) || 0);
+  const totalAmount = formatJod(Math.max(0, (qty * unitPrice) - discount));
+
+  if (!itemTitle) return showToast("اكتب اسم الصنف أو الجهاز للفاتورة");
+  if (totalAmount <= 0) return showToast("أدخل سعر وحدة صحيح للفاتورة");
+
+  const invNumber = document.getElementById('invNumberInput').value.trim() || generateNextInvoiceNumber();
+  const invDate = document.getElementById('invDateInput').value || new Date().toISOString().split('T')[0];
+  const partyName = document.getElementById('invPartyInput').value.trim() || (currentInvoiceType === 'sale' ? 'عميل نقدي' : 'مورد');
+  const warranty = getSelectedWarrantyValue();
+  const imei = document.getElementById('invImeiInput').value.trim() || '-';
+  const payStatus = document.getElementById('invPayStatusSelect').value;
+  const notes = document.getElementById('invNotesInput').value.trim();
+
+  let targetInvoice;
+
+  if (editId) {
+    const idx = invoices.findIndex(x => x.id === editId);
+    if (idx > -1) {
+      targetInvoice = {
+        ...invoices[idx],
+        invType: currentInvoiceType,
+        invNumber,
+        date: invDate,
+        partyName,
+        warranty,
+        itemTitle,
+        qty,
+        unitPrice,
+        discount,
+        totalAmount,
+        imei,
+        payStatus,
+        notes
+      };
+      invoices[idx] = targetInvoice;
+    }
+  } else {
+    const maxOrder = invoices.length > 0 ? Math.max(...invoices.map(getItemSortKey)) : Date.now();
+    targetInvoice = {
+      id: 'inv_' + Date.now(),
+      sortOrder: maxOrder + 1000,
+      invType: currentInvoiceType,
+      invNumber,
+      date: invDate,
+      partyName,
+      warranty,
+      itemTitle,
+      qty,
+      unitPrice,
+      discount,
+      totalAmount,
+      imei,
+      payStatus,
+      notes
+    };
+    invoices.unshift(targetInvoice);
+  }
+
+  syncToCloud();
+  resetInvoiceForm();
+  showToast(editId ? "تم تعديل الفاتورة" : "تم حفظ الفاتورة بنجاح");
+
+  if (openPreviewAfter && targetInvoice) {
+    openInvoicePreview(targetInvoice.id);
+  }
+}
+
+function editInvoice(invoiceId) {
+  const iv = invoices.find(x => x.id === invoiceId);
+  if (!iv) return;
+
+  switchTab('invoices');
+  document.getElementById('editInvoiceId').value = iv.id;
+  document.getElementById('invFormTitle').innerHTML = `<i data-lucide="pencil" class="ico-lg" style="color:#2563eb;"></i><span>تعديل فاتورة (${escapeHtml(iv.invNumber)})</span>`;
+  document.getElementById('saveInvBtn').innerHTML = `<i data-lucide="check-circle-2" class="ico"></i><span>حفظ تعديلات الفاتورة</span>`;
+  document.getElementById('resetInvFormBtn').style.display = 'inline-flex';
+
+  setInvoiceType(iv.invType || 'sale');
+  document.getElementById('invNumberInput').value = iv.invNumber || '';
+  document.getElementById('invDateInput').value = iv.date || new Date().toISOString().split('T')[0];
+  document.getElementById('invPartyInput').value = iv.partyName || '';
+
+  const wSel = document.getElementById('invWarrantySelect');
+  const wVal = iv.warranty || 'فحص تشغيلي 7 أيام';
+  if ([...wSel.options].some(o => o.value === wVal)) {
+    wSel.value = wVal;
+    document.getElementById('invCustomWarrantyInput').value = '';
+  } else {
+    wSel.value = 'custom';
+    document.getElementById('invCustomWarrantyInput').value = wVal;
+  }
+  toggleCustomWarranty();
+
+  document.getElementById('invItemTitleInput').value = iv.itemTitle || '';
+  document.getElementById('invQtyInput').value = iv.qty || 1;
+  document.getElementById('invUnitPriceInput').value = formatJod(iv.unitPrice || 0);
+  document.getElementById('invDiscountInput').value = formatJod(iv.discount || 0);
+  document.getElementById('invImeiInput').value = (!iv.imei || iv.imei === '-') ? '' : iv.imei;
+  document.getElementById('invPayStatusSelect').value = iv.payStatus || 'مدفوعة بالكامل';
+  document.getElementById('invNotesInput').value = iv.notes || '';
+
+  updateInvoiceTotalPreview();
+  refreshIcons();
+}
+
+function deleteInvoice(invoiceId) {
+  invoices = invoices.filter(x => x.id !== invoiceId);
+  syncToCloud();
+  showToast("تم حذف الفاتورة");
+}
+
+function openInvoicePreview(invoiceId) {
+  const iv = invoices.find(x => x.id === invoiceId);
+  if (!iv) return;
+
+  const isPurchase = iv.invType === 'purchase';
+  const typeLabel = isPurchase ? 'فاتورة شراء (Purchase Invoice)' : 'فاتورة بيع (Sales Invoice)';
+  const partyTitle = isPurchase ? 'المورد / جهة الشراء' : 'العميل';
+  const subtotal = formatJod((Number(iv.qty || 1)) * (Number(iv.unitPrice || 0)));
+  const disc = formatJod(iv.discount || 0);
+  const netTotal = formatJod(iv.totalAmount || Math.max(0, subtotal - disc));
+
+  document.getElementById('invoicePreviewBody').innerHTML = `
+    <div class="invoice-sheet">
+      <div class="invoice-top-banner">
+        <div class="shop-brand-lockup">
+          <div class="apex-mark-wrap shop-logo-box">${getApexLogoMarkup()}</div>
+          <div>
+            <div style="font-weight:900; font-size:18px; color:#0f172a; line-height:1.15;">Apex JO</div>
+            <div style="font-size:11.5px; color:#64748b; font-weight:700;">الأردن • عمّان — الأجهزة الذكية والإكسسوارات</div>
+          </div>
+        </div>
+        <div style="text-align:left;">
+          <span class="badge ${isPurchase ? 'badge-purchase' : 'badge-new'}" style="font-size:11.5px; padding:4px 10px;">${typeLabel}</span>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:5px;">#${escapeHtml(iv.invNumber)}</div>
+        </div>
+      </div>
+
+      <div class="invoice-meta-grid">
+        <div><b>${partyTitle}:</b> ${escapeHtml(iv.partyName || '-')}</div>
+        <div><b>التاريخ:</b> ${escapeHtml(iv.date || '-')}</div>
+        <div><b>حالة الدفع:</b> ${escapeHtml(iv.payStatus || 'مدفوعة بالكامل')}</div>
+        <div><b>رقم IMEI / السيريال:</b> ${escapeHtml(iv.imei || '-')}</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>الصنف / الجهاز</th>
+            <th>الكمية</th>
+            <th>سعر الوحدة</th>
+            <th>الخصم</th>
+            <th>الإجمالي</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>${escapeHtml(iv.itemTitle)}</b></td>
+            <td>${iv.qty || 1}</td>
+            <td>${formatJod(iv.unitPrice || 0)} JOD</td>
+            <td>${disc > 0 ? disc + ' JOD' : '-'}</td>
+            <td><b>${netTotal} JOD</b></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:12px; padding:11px 14px; background:#0f172a; color:#fff; border-radius:13px; display:flex; justify-content:space-between; align-items:center; font-weight:900;">
+        <span>المبلغ الإجمالي المستحق</span>
+        <span style="color:#34d399; font-size:17px;">${netTotal} JOD</span>
+      </div>
+
+      <div class="warranty-banner">
+        <div>مدة الكفالة / الضمان: <span style="color:#047857;">${escapeHtml(iv.warranty || 'بدون كفالة')}</span></div>
+        ${iv.notes ? `<div style="margin-top:4px; color:#334155; font-weight:700;">ملاحظات وشروط: ${escapeHtml(iv.notes)}</div>` : ''}
+      </div>
+
+      <div style="margin-top:14px; display:flex; justify-content:space-between; align-items:center; font-size:11px; color:#64748b; font-weight:700;">
+        <span>شكراً لتعاملكم مع Apex JO</span>
+        <span>ختم / توقيع المحل: ____________</span>
+      </div>
+    </div>
+  `;
+
+  const summaryText =
+    `فاتورة ${isPurchase ? 'شراء' : 'بيع'} - Apex JO\n` +
+    `رقم الفاتورة: ${iv.invNumber}\n` +
+    `التاريخ: ${iv.date}\n` +
+    `${partyTitle}: ${iv.partyName}\n` +
+    `الصنف: ${iv.itemTitle} (الكمية: ${iv.qty || 1})\n` +
+    `IMEI: ${iv.imei || '-'}\n` +
+    `مدة الكفالة: ${iv.warranty || 'بدون كفالة'}\n` +
+    `الإجمالي: ${netTotal} JOD (${iv.payStatus || ''})`;
+
+  document.getElementById('shareInvoiceTextBtn').onclick = () => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(summaryText).then(() => showToast("تم نسخ ملخص الفاتورة")).catch(() => {});
+    }
+  };
+
+  document.getElementById('invoicePreviewModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeInvoicePreview() {
+  const m = document.getElementById('invoicePreviewModal');
+  m.classList.remove('print-target');
+  m.style.display = 'none';
+}
+
+function printInvoicePdf() {
+  document.getElementById('pdfModal').classList.remove('print-target');
+  document.getElementById('profitReportModal').classList.remove('print-target');
+  document.getElementById('invoicePreviewModal').classList.add('print-target');
+  window.print();
+}
+
+function renderInvoices() {
+  const q = (document.getElementById('searchInvoices')?.value || '').toLowerCase();
+  const filtered = invoices.filter(iv => {
+    if (currentInvoiceFilter !== 'all' && (iv.invType || 'sale') !== currentInvoiceFilter) return false;
+    const hay = `${iv.invNumber || ''} ${iv.partyName || ''} ${iv.itemTitle || ''} ${iv.imei || ''} ${iv.warranty || ''}`.toLowerCase();
+    return hay.includes(q);
+  });
+
+  document.getElementById('invoicesSummaryBar').innerText = `${invoices.length} فاتورة مسجلة`;
+
+  document.getElementById('invoicesList').innerHTML = filtered.map(iv => {
+    const isPurchase = iv.invType === 'purchase';
+    return `
+      <div class="item-card" style="border-right: 4px solid ${isPurchase ? '#2563eb' : '#10b981'};">
+        <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span class="badge ${isPurchase ? 'badge-purchase' : 'badge-new'}">${isPurchase ? 'فاتورة شراء' : 'فاتورة بيع'}</span>
+              <span style="font-size:12px; font-weight:900; color:#0f172a;">#${escapeHtml(iv.invNumber || '')}</span>
+              <span style="font-size:11.5px; color:var(--muted); font-weight:700;">• ${escapeHtml(iv.date || '-')}</span>
+            </div>
+            <div style="font-weight:900; font-size:15px; margin-top:6px;">${escapeHtml(iv.itemTitle)} <span style="font-size:12px; color:var(--muted);">×${iv.qty || 1}</span></div>
+            <div style="font-size:12px; color:var(--muted); font-weight:600; margin-top:2px;">
+              ${isPurchase ? 'المورد' : 'العميل'}: <b>${escapeHtml(iv.partyName || '-')}</b> • ${escapeHtml(iv.payStatus || '')}
+            </div>
+            <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span class="badge badge-warranty">
+                <i data-lucide="shield-check" class="ico-sm"></i>
+                <span>كفالة: ${escapeHtml(iv.warranty || 'بدون كفالة')}</span>
+              </span>
+              ${iv.imei && iv.imei !== '-' ? `<span style="font-size:11px; color:var(--muted); font-weight:700;">IMEI: ${escapeHtml(iv.imei)}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:left; flex-shrink:0;">
+            <div style="font-weight:900; color:${isPurchase ? '#1d4ed8' : '#059669'}; font-size:15.5px;">${formatJod(iv.totalAmount || 0)} JOD</div>
+            <div style="display:flex; gap:4px; margin-top:8px; justify-content:flex-end; flex-wrap:wrap;">
+              <button class="btn btn-sm" style="background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1;" onclick="openInvoicePreview('${iv.id}')" title="معاينة وطباعة PDF">
+                <i data-lucide="printer" class="ico-sm"></i>
+                <span>PDF</span>
+              </button>
+              <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="editInvoice('${iv.id}')">
+                <i data-lucide="pencil" class="ico-sm"></i>
+                <span>تعديل</span>
+              </button>
+              <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteInvoice('${iv.id}')" title="حذف الفاتورة">
+                <i data-lucide="trash-2" class="ico-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<p style="text-align:center; color:var(--muted);">لا توجد فواتير مطابقة بعد</p>';
+}
+
+/* --- الربح الخارجي --- */
+function addExtraIncome() {
+  const amount = formatJod(parseFloat(document.getElementById('extraAmountInput').value));
+  const note = document.getElementById('extraNoteInput').value.trim() || 'ربح خارجي';
+  const date = document.getElementById('extraDateInput').value || new Date().toISOString().split('T')[0];
+
+  if (!amount || amount <= 0) return showToast("أدخل قيمة صحيحة للربح الخارجي");
+
+  const maxOrder = extraIncomes.length > 0 ? Math.max(...extraIncomes.map(getItemSortKey)) : Date.now();
+  extraIncomes.unshift({
+    id: 'extra_' + Date.now(),
+    sortOrder: maxOrder + 1000,
+    amount,
+    note,
+    date
+  });
+
+  syncToCloud();
+  document.getElementById('extraAmountInput').value = '';
+  document.getElementById('extraNoteInput').value = '';
+  document.getElementById('extraDateInput').value = new Date().toISOString().split('T')[0];
+  showToast("تمت إضافة الربح الخارجي وزيادته على الربح");
+}
+
+function openEditExtraModal(extraId) {
+  const item = extraIncomes.find(x => x.id === extraId);
+  if (!item) return;
+
+  document.getElementById('editExtraId').value = item.id;
+  document.getElementById('editExtraAmountInput').value = formatJod(item.amount || 0);
+  document.getElementById('editExtraNoteInput').value = item.note || '';
+  document.getElementById('editExtraDateInput').value = item.date || new Date().toISOString().split('T')[0];
+  document.getElementById('editExtraModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeEditExtraModal() {
+  document.getElementById('editExtraModal').style.display = 'none';
+}
+
+function saveExtraIncomeEdit() {
+  const extraId = document.getElementById('editExtraId').value;
+  const idx = extraIncomes.findIndex(x => x.id === extraId);
+  if (idx === -1) return;
+
+  const amount = formatJod(parseFloat(document.getElementById('editExtraAmountInput').value));
+  const note = document.getElementById('editExtraNoteInput').value.trim() || 'ربح خارجي';
+  const date = document.getElementById('editExtraDateInput').value || extraIncomes[idx].date || new Date().toISOString().split('T')[0];
+
+  if (isNaN(amount) || amount < 0) return showToast("قيمة غير صحيحة");
+
+  extraIncomes[idx] = { ...extraIncomes[idx], amount, note, date };
+  syncToCloud();
+  closeEditExtraModal();
+  showToast("تم تحديث الربح الخارجي");
+}
+
+function deleteExtraIncome(extraId) {
+  extraIncomes = extraIncomes.filter(x => x.id !== extraId);
+  syncToCloud();
+  showToast("تم حذف الربح الخارجي");
+}
+
+function renderExtraIncomes() {
+  const totalExtra = formatJod(extraIncomes.reduce((sum, ex) => sum + Number(ex.amount || 0), 0));
+  document.getElementById('extraTotalBar').innerText = `+${totalExtra} JOD (${extraIncomes.length} بند)`;
+
+  document.getElementById('extraIncomeList').innerHTML = extraIncomes.map(ex => `
+    <div class="item-card" style="border-right: 4px solid #10b981;">
+      <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span class="badge badge-new">+ربح خارجي</span>
+            <span style="font-size:12px; color:var(--muted); font-weight:700;">${escapeHtml(ex.date || '-')}</span>
+          </div>
+          <div class="note-box">
+            <span style="color:#065f46; font-weight:800;">ملاحظات:</span> ${escapeHtml(ex.note || 'بدون ملاحظات')}
+          </div>
+        </div>
+        <div style="text-align:left; flex-shrink:0;">
+          <div style="font-weight:900; color:#059669; font-size:15.5px;">+${formatJod(ex.amount || 0)} JOD</div>
+          <div style="display:flex; gap:4px; margin-top:8px; justify-content:flex-end;">
+            <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="openEditExtraModal('${ex.id}')">
+              <i data-lucide="pencil" class="ico-sm"></i>
+              <span>تعديل</span>
+            </button>
+            <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteExtraIncome('${ex.id}')" title="حذف">
+              <i data-lucide="trash-2" class="ico-sm"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('') || '<p style="text-align:center; color:var(--muted);">لا توجد أرباح خارجية مسجلة بعد</p>';
+}
+
+/* --- دفعات الإكسسوارات --- */
+function openBatchModal() {
+  document.getElementById('batchTitleInput').value = '';
+  document.getElementById('batchCostInput').value = '';
+  document.getElementById('batchQtyInput').value = '1';
+  renderBatchesModalContent();
+  document.getElementById('batchModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeBatchModal() {
+  document.getElementById('batchModal').style.display = 'none';
+}
+
+function createAccessoryBatch() {
+  const title = document.getElementById('batchTitleInput').value.trim();
+  const cost = formatJod(parseFloat(document.getElementById('batchCostInput').value) || 0);
+  const qty = Math.max(1, parseInt(document.getElementById('batchQtyInput').value, 10) || 1);
+
+  if (!title) return showToast("اكتب اسم الدفعة أولاً");
+  if (cost <= 0) return showToast("أدخل تكلفة الدفعة");
+
+  const batchId = 'batch_' + Date.now();
+  const dateStr = new Date().toISOString().split('T')[0];
+  const maxBatchOrder = batches.length > 0 ? Math.max(...batches.map(getItemSortKey)) : Date.now();
+
+  batches.unshift({
+    id: batchId,
+    sortOrder: maxBatchOrder + 1000,
+    title: title,
+    totalCost: cost,
+    initialQty: qty,
+    date: dateStr
+  });
+
+  let nextOrder = inventory.length > 0 ? Math.max(...inventory.map(getItemSortKey)) : Date.now();
+  const baseTime = Date.now();
+
+  for (let k = 0; k < qty; k++) {
+    nextOrder += 1000;
+    inventory.unshift({
+      id: 'item_' + (baseTime + k) + '_' + Math.random().toString(36).slice(2, 6),
+      sortOrder: nextOrder,
+      fundingSource: 'own',
+      cond: 'new',
+      condition: 'new',
+      brand: 'Other',
+      model: `${title} #${k + 1}`,
+      color: 'متنوع',
+      storage: 'بدون سعة',
+      battery: 100,
+      sim: 'Wi-Fi فقط',
+      buyPrice: 0,
+      batchId: batchId,
+      batchTitle: title,
+      imei: '-',
+      note: '',
+      date: dateStr
+    });
+  }
+
+  syncToCloud();
+  document.getElementById('batchTitleInput').value = '';
+  document.getElementById('batchCostInput').value = '';
+  document.getElementById('batchQtyInput').value = '1';
+  showToast("تم إنشاء الدفعة بنجاح");
+}
+
+function deleteAccessoryBatch(batchId) {
+  const batch = batches.find(b => b.id === batchId);
+  if (!batch) return;
+  batches = batches.filter(b => b.id !== batchId);
+  inventory = inventory.filter(i => i.batchId !== batchId);
+  syncToCloud();
+  showToast("تم حذف الدفعة");
+}
+
+function getBatchStats(batch) {
+  const batchSales = sales.filter(s => s.item && s.item.batchId === batch.id);
+  const collected = batchSales.reduce((sum, s) => sum + Number(s.sellPrice || 0), 0);
+  const totalCost = Number(batch.totalCost || 0);
+  const remainingCost = Math.max(0, totalCost - collected);
+  const netBatchProfit = collected - totalCost;
+  const remainingItems = inventory.filter(i => i.batchId === batch.id).length;
+
+  return {
+    collected: formatJod(collected),
+    remainingCost: formatJod(remainingCost),
+    netBatchProfit: formatJod(netBatchProfit),
+    remainingItems,
+    salesCount: batchSales.length
+  };
+}
+
+function renderBatchesModalContent() {
+  const box = document.getElementById('batchesListBody');
+  if (!batches.length) {
+    box.innerHTML = '<p style="text-align:center; color:var(--muted);">لا توجد دفعات إكسسوارات مسجلة بعد</p>';
+    return;
+  }
+
+  box.innerHTML = batches.map(b => {
+    const st = getBatchStats(b);
+    const isRecovered = st.remainingCost <= 0;
+    return `
+      <div class="batch-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div>
+            <b>${escapeHtml(b.title)}</b>
+            <div style="font-size:11px; color:var(--muted);">متبقي في المخزون: ${st.remainingItems} من ${b.initialQty} قطع • ${b.date || ''}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="badge ${isRecovered ? 'badge-new' : 'badge-used'}">${isRecovered ? 'مغطّاة' : 'قيد التصفية'}</span>
+            <button type="button" class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteAccessoryBatch('${b.id}')">
+              <i data-lucide="trash-2" class="ico-sm"></i>
+              <span>حذف</span>
+            </button>
+          </div>
+        </div>
+        <div class="batch-metrics">
+          <div class="batch-metric">تكلفة الدفعة: <b>${formatJod(b.totalCost)} JOD</b></div>
+          <div class="batch-metric">المحصّل حتى الآن: <b style="color:#2563eb;">${st.collected} JOD</b></div>
+          <div class="batch-metric">متبقي لتغطية التكلفة: <b style="color:var(--danger);">${st.remainingCost} JOD</b></div>
+          <div class="batch-metric">صافي ربح الدفعة: <b style="color:${st.netBatchProfit >= 0 ? 'var(--accent-dark)' : 'var(--danger)'};">${st.netBatchProfit >= 0 ? '+' : ''}${st.netBatchProfit} JOD</b></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  refreshIcons();
+}
+
+/* --- ماسح الباركود IMEI --- */
+async function startImeiScanner() {
+  if (imeiScanner || typeof Html5Qrcode === 'undefined') {
+    if (typeof Html5Qrcode === 'undefined') showToast("تعذر تحميل مكتبة الكاميرا");
+    return;
+  }
+
+  const box = document.getElementById('imeiScannerBox');
+  const startBtn = document.getElementById('startScanBtn');
+  box.style.display = 'block';
+  startBtn.disabled = true;
+
+  imeiScanner = new Html5Qrcode("imeiReader");
+  try {
+    await imeiScanner.start(
+      { facingMode: "environment" },
+      { fps: 12, qrbox: { width: 260, height: 110 } },
+      (decodedText) => {
+        const cleaned = String(decodedText || '').trim();
+        if (cleaned) document.getElementById('imeiInput').value = cleaned;
+        stopImeiScanner();
+      },
+      () => {}
+    );
+  } catch (err) {
+    showToast("تعذر تشغيل الكاميرا");
+    imeiScanner = null;
+    box.style.display = 'none';
+    startBtn.disabled = false;
+  }
+}
+
+async function stopImeiScanner() {
+  const box = document.getElementById('imeiScannerBox');
+  const startBtn = document.getElementById('startScanBtn');
+  startBtn.disabled = false;
+  box.style.display = 'none';
+
+  if (!imeiScanner) return;
+  const activeScanner = imeiScanner;
+  imeiScanner = null;
+  try { await activeScanner.stop(); } catch (e) {}
+  try { await activeScanner.clear(); } catch (e) {}
+  document.getElementById('imeiReader').innerHTML = '';
+}
+
+/* --- المخزون والإضافة --- */
+function setFundingSource(src) {
+  currentFundingSource = src === 'consignment' ? 'consignment' : 'own';
+  const isCons = currentFundingSource === 'consignment';
+
+  document.getElementById('btnOwn').className = 'cond-btn' + (!isCons ? ' active-own' : '');
+  document.getElementById('btnConsignment').className = 'cond-btn' + (isCons ? ' active-consignment' : '');
+  document.getElementById('consignmentInfoBox').style.display = isCons ? 'block' : 'none';
+  document.getElementById('buyPriceGroup').style.display = isCons ? 'none' : 'block';
+  document.getElementById('consignmentProfitGroup').style.display = isCons ? 'block' : 'none';
+
+  if (isCons) {
+    document.getElementById('unitCostPreview').style.display = 'none';
+  } else {
+    updateUnitCostPreview();
+  }
+}
+
+function setCond(c) {
+  currentCond = c;
+  document.getElementById('btnNew').className = 'cond-btn' + (c === 'new' ? ' active-new' : '');
+  document.getElementById('btnUsed').className = 'cond-btn' + (c === 'used' ? ' active-used' : '');
+}
+
+function updateModelsAndColors() {
+  const b = document.getElementById('brandSelect').value;
+  const mSel = document.getElementById('modelSelect');
+  mSel.innerHTML = (catalog[b] || catalog.Apple).map(m => `<option value="${m}">${m}</option>`).join('');
+
+  const cBox = document.getElementById('colorChips');
+  cBox.innerHTML = (brandColors[b] || brandColors.Apple).map(col => `
+    <div class="chip" onclick="selectColor('${col.n}', this)">
+      <span class="dot" style="background:${col.c}"></span>${col.n}
+    </div>
+  `).join('');
+}
+
+function selectColor(name, el) {
+  document.getElementById('colorInput').value = name;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function updateUnitCostPreview() {
+  const editId = document.getElementById('editItemId').value;
+  const previewBox = document.getElementById('unitCostPreview');
+  if (editId || currentFundingSource === 'consignment') {
+    previewBox.style.display = 'none';
+    return;
+  }
+  const totalPrice = parseFloat(document.getElementById('buyPriceInput').value) || 0;
+  const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value, 10) || 1);
+
+  if (qty > 1 && totalPrice > 0) {
+    const unitCost = formatJod(totalPrice / qty);
+    document.getElementById('unitCostVal').innerText = `${unitCost} JOD (${totalPrice} ÷ ${qty})`;
+    previewBox.style.display = 'flex';
+  } else {
+    previewBox.style.display = 'none';
+  }
+}
+
+function saveItem() {
+  stopImeiScanner();
+  const editId = document.getElementById('editItemId').value;
+  const customM = document.getElementById('customModelInput').value.trim();
+  const model = customM || document.getElementById('modelSelect').value;
+  const isCons = currentFundingSource === 'consignment';
+  const enteredPrice = isCons ? 0 : (parseFloat(document.getElementById('buyPriceInput').value) || 0);
+  const rawConsProfit = document.getElementById('consignmentProfitInput').value;
+  const expectedProfit = isCons && rawConsProfit !== '' ? formatJod(parseFloat(rawConsProfit) || 0) : null;
+
+  const brand = document.getElementById('brandSelect').value;
+  const color = document.getElementById('colorInput').value.trim() || 'غير محدد';
+  const storage = document.getElementById('storageSelect').value;
+  const battery = document.getElementById('batteryInput').value || 100;
+  const sim = document.getElementById('simSelect').value;
+  const imei = document.getElementById('imeiInput').value.trim() || '-';
+  const note = document.getElementById('itemNoteInput').value.trim();
+  const date = document.getElementById('dateInput').value || new Date().toISOString().split('T')[0];
+
+  if (editId) {
+    const idx = inventory.findIndex(x => x.id === editId);
+    if (idx > -1) {
+      inventory[idx] = {
+        ...inventory[idx],
+        fundingSource: currentFundingSource,
+        isConsignment: isCons,
+        expectedProfit,
+        cond: currentCond,
+        condition: currentCond,
+        brand, model, color, storage, battery, sim,
+        buyPrice: isCons ? 0 : formatJod(enteredPrice),
+        imei, note, date
+      };
+    }
+  } else {
+    const qty = Math.max(1, parseInt(document.getElementById('qtyInput').value, 10) || 1);
+    const unitBuyPrice = isCons ? 0 : formatJod(enteredPrice / qty);
+    let nextOrder = inventory.length > 0 ? Math.max(...inventory.map(getItemSortKey)) : Date.now();
+    const baseTime = Date.now();
+
+    for (let k = 0; k < qty; k++) {
+      nextOrder += 1000;
+      inventory.unshift({
+        id: 'item_' + (baseTime + k) + '_' + Math.random().toString(36).slice(2, 6),
+        sortOrder: nextOrder,
+        fundingSource: currentFundingSource,
+        isConsignment: isCons,
+        expectedProfit,
+        cond: currentCond,
+        condition: currentCond,
+        brand, model, color, storage, battery, sim,
+        buyPrice: unitBuyPrice,
+        imei: k === 0 ? imei : '-',
+        note,
+        date
+      });
+    }
+  }
+
+  syncToCloud();
+  resetForm();
+  switchTab('inv');
+  showToast(isCons ? "تمت إضافة جهاز أمانة (بدون احتساب تكلفة)" : "تم الحفظ بنجاح");
+}
+
+function editItem(id) {
+  const item = inventory.find(x => x.id === id);
+  if (!item) return;
+
+  switchTab('add', false);
+
+  document.getElementById('formTitle').innerHTML = `<i data-lucide="pencil" class="ico-lg" style="color:#2563eb;"></i><span>تعديل بيانات الجهاز</span>`;
+  document.getElementById('saveItemBtn').innerHTML = `<i data-lucide="check-circle-2" class="ico"></i><span>حفظ التعديلات</span>`;
+  document.getElementById('buyPriceLabel').innerText = "سعر شراء القطعة (JOD)";
+  document.getElementById('unitCostPreview').style.display = 'none';
+  document.getElementById('editItemId').value = item.id;
+  document.getElementById('qtyGroup').style.display = 'none';
+  document.getElementById('qtyInput').value = 1;
+
+  setFundingSource(isConsignmentItem(item) ? 'consignment' : 'own');
+  document.getElementById('consignmentProfitInput').value =
+    (item.expectedProfit !== undefined && item.expectedProfit !== null) ? formatJod(item.expectedProfit) : '';
+
+  setCond(isItemUsed(item) ? 'used' : 'new');
+
+  const brandVal = catalog[item.brand] ? item.brand : 'Apple';
+  document.getElementById('brandSelect').value = brandVal;
+  updateModelsAndColors();
+
+  const mSel = document.getElementById('modelSelect');
+  if ([...mSel.options].some(o => o.value === item.model)) {
+    mSel.value = item.model;
+    document.getElementById('customModelInput').value = '';
+  } else {
+    document.getElementById('customModelInput').value = item.model || '';
+  }
+
+  document.getElementById('colorInput').value = item.color || '';
+  document.getElementById('storageSelect').value = item.storage || '256GB';
+  document.getElementById('batteryInput').value = item.battery || 100;
+  document.getElementById('simSelect').value = item.sim || 'شريحة + eSIM';
+  document.getElementById('buyPriceInput').value = formatJod(item.buyPrice || 0);
+  document.getElementById('imeiInput').value = (!item.imei || item.imei === '-') ? '' : item.imei;
+  document.getElementById('itemNoteInput').value = item.note || '';
+  document.getElementById('dateInput').value = item.date || new Date().toISOString().split('T')[0];
+  document.getElementById('cancelEditBtn').style.display = 'block';
+  refreshIcons();
+}
+
+function cancelEditAndBack() {
+  resetForm();
+  goBack();
+}
+
+function resetForm() {
+  stopImeiScanner();
+  document.getElementById('formTitle').innerHTML = `<i data-lucide="plus-circle" class="ico-lg" style="color:#059669;"></i><span>إضافة جهاز للمخزون</span>`;
+  document.getElementById('saveItemBtn').innerHTML = `<i data-lucide="check-circle-2" class="ico"></i><span>حفظ في المخزون السحابي</span>`;
+  document.getElementById('buyPriceLabel').innerText = "التكلفة الإجمالية للكمية (JOD)";
+  document.getElementById('unitCostPreview').style.display = 'none';
+  document.getElementById('editItemId').value = '';
+  document.getElementById('qtyGroup').style.display = 'block';
+  document.getElementById('qtyInput').value = 1;
+  document.getElementById('customModelInput').value = '';
+  document.getElementById('colorInput').value = '';
+  document.getElementById('buyPriceInput').value = '';
+  document.getElementById('consignmentProfitInput').value = '';
+  document.getElementById('imeiInput').value = '';
+  document.getElementById('itemNoteInput').value = '';
+  document.getElementById('dateInput').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  setFundingSource('own');
+  setCond('new');
+  updateModelsAndColors();
+  refreshIcons();
+}
+
+function deleteItem(id) {
+  inventory = inventory.filter(x => x.id !== id);
+  syncToCloud();
+  showToast("تم حذف الجهاز من المخزون");
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  ['all','new','used'].forEach(k => {
+    const btn = document.getElementById('f-' + k);
+    btn.className = 'btn btn-sm' + (k === f ? ' btn-dark' : '');
+    if (k !== f) { btn.style.background = '#fff'; btn.style.border = '1px solid var(--border)'; }
+  });
+  renderInv();
+}
+
+function getDaysOld(dateStr) {
+  if (!dateStr) return 0;
+  const diff = Date.now() - new Date(dateStr).getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
+}
+
+function renderInv() {
+  const q = document.getElementById('searchInv').value.toLowerCase();
+  const filtered = inventory.filter(i => {
+    const used = isItemUsed(i);
+    if (currentFilter === 'new' && used) return false;
+    if (currentFilter === 'used' && !used) return false;
+    const consTag = isConsignmentItem(i) ? 'أمانة عمولة بدون تكلفة' : '';
+    return (String(i.model || '') + String(i.color || '') + String(i.imei || '') + String(i.note || '') + consTag).toLowerCase().includes(q);
+  });
+
+  const filteredSum = formatJod(filtered.reduce((acc, item) => {
+    if (isConsignmentItem(item)) return acc;
+    return acc + Number(item.buyPrice || 0);
+  }, 0));
+  document.getElementById('invFilteredTotal').innerText = filteredSum + " JOD (" + filtered.length + " جهاز)";
+
+  const canReorder = (currentFilter === 'all' && q.trim() === '');
+
+  document.getElementById('invList').innerHTML = filtered.map((i, idx) => {
+    const days = getDaysOld(i.date);
+    const isStale = days >= 12;
+    const used = isItemUsed(i);
+    const cons = isConsignmentItem(i);
+    const hasNote = !!(i.note && String(i.note).trim());
+
+    let priceDisplay = `${formatJod(i.buyPrice || 0)} JOD`;
+    if (i.batchId) {
+      priceDisplay = 'تصفية دفعة';
+    } else if (cons) {
+      priceDisplay = i.expectedProfit !== undefined && i.expectedProfit !== null
+        ? `أمانة (ربح: +${formatJod(i.expectedProfit)})`
+        : 'أمانة (بدون تكلفة)';
+    }
+
+    return `
+      <div class="item-card ${isStale ? 'stale' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+          <div style="flex:1;">
+            <span class="badge ${used ? 'badge-used' : 'badge-new'}">${used ? 'مستخدم' : 'جديد'}</span>
+            ${cons ? `<span class="badge badge-consignment">أمانة • لا يُحسب بالتكلفة</span>` : ''}
+            ${i.batchId ? `<span class="badge badge-batch">دفعة مجمّعة</span>` : ''}
+            ${isStale ? `<span class="badge badge-stale">${days} يوم</span>` : ''}
+            <div style="font-weight:900; font-size:15px; margin-top:6px;">${escapeHtml(i.model)} (${escapeHtml(i.storage || '')})</div>
+            <div style="font-size:12px; color:var(--muted); font-weight:600;">اللون: ${escapeHtml(i.color || '-')} • البطارية: ${i.battery || 100}% • ${escapeHtml(i.sim || '-')}</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:3px; font-weight:600;">IMEI: ${escapeHtml(i.imei || '-')} • ${escapeHtml(i.date || '-')}</div>
+
+            ${hasNote ? `
+              <div class="product-note-banner">
+                <div style="display:flex; align-items:flex-start; gap:6px;">
+                  <i data-lucide="sticky-note" class="ico-sm" style="color:#d97706; margin-top:2px;"></i>
+                  <span><b>ملاحظة:</b> ${escapeHtml(i.note)}</span>
+                </div>
+                <div class="product-note-actions">
+                  <button type="button" class="btn btn-xs" style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d;" onclick="openEditItemNoteModal('${i.id}')" title="تعديل الملاحظة">
+                    <i data-lucide="pencil" class="ico-sm"></i>
+                    <span>تعديل الملاحظة</span>
+                  </button>
+                  <button type="button" class="btn btn-xs" style="background:#fee2e2; color:#991b1b; border:1px solid #fecaca;" onclick="deleteItemNote('${i.id}')" title="حذف الملاحظة">
+                    <i data-lucide="trash-2" class="ico-sm"></i>
+                    <span>حذف الملاحظة</span>
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <div style="margin-top:7px;">
+                <button type="button" class="btn btn-xs" style="background:#f8fafc; color:#475569; border:1px dashed #cbd5e1;" onclick="openEditItemNoteModal('${i.id}')">
+                  <i data-lucide="sticky-note" class="ico-sm"></i>
+                  <span>+ إضافة ملاحظة</span>
+                </button>
+              </div>
+            `}
+          </div>
+
+          <div style="text-align:left; flex-shrink:0;">
+            <div style="font-weight:900; color:${cons ? '#0f766e' : 'var(--primary)'}; font-size:14.5px;">${priceDisplay}</div>
+            <div style="display:flex; gap:4px; margin-top:8px; justify-content:flex-end;">
+              ${canReorder ? `
+                <button class="btn-move" onclick="moveItem('${i.id}', -1)" ${idx === 0 ? 'disabled style="opacity:0.35;"' : ''} title="تحريك للأعلى">
+                  <i data-lucide="chevron-up" class="ico-sm"></i>
+                </button>
+                <button class="btn-move" onclick="moveItem('${i.id}', 1)" ${idx === filtered.length - 1 ? 'disabled style="opacity:0.35;"' : ''} title="تحريك للأسفل">
+                  <i data-lucide="chevron-down" class="ico-sm"></i>
+                </button>
+              ` : ''}
+              <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="editItem('${i.id}')">
+                <i data-lucide="pencil" class="ico-sm"></i>
+                <span>تعديل</span>
+              </button>
+              <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteItem('${i.id}')" title="حذف">
+                <i data-lucide="trash-2" class="ico-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('') || '<p style="text-align:center; color:var(--muted);">لا توجد أجهزة مطابقة</p>';
+}
+
+/* --- المبيعات والذمم --- */
+function toggleDebtFields() {
+  const isDebt = document.getElementById('payTypeSelect').value === 'debt';
+  document.getElementById('debtFields').style.display = isDebt ? 'block' : 'none';
+  document.getElementById('sellPriceLabel').innerText = isDebt ? 'سعر البيع المتفق عليه (اختياري)' : 'سعر البيع (JOD)';
+  updateSellHint();
+}
+
+function syncConsignmentProfitDefault() {
+  const itemId = document.getElementById('sellItemSelect').value;
+  const item = inventory.find(x => x.id === itemId);
+  if (!item || !isConsignmentItem(item)) return;
+  const sellVal = document.getElementById('sellPriceInput').value;
+  const profInput = document.getElementById('sellConsignmentProfitInput');
+  if (profInput.dataset.touched !== '1' && sellVal) {
+    profInput.value = sellVal;
+  }
+}
+
+function updateSellHint() {
+  const itemId = document.getElementById('sellItemSelect').value;
+  const item = inventory.find(x => x.id === itemId);
+  const hintEl = document.getElementById('sellItemBuyHint');
+  const consBox = document.getElementById('sellConsignmentProfitBox');
+  const profInput = document.getElementById('sellConsignmentProfitInput');
+
+  if (!item) {
+    hintEl.innerText = '';
+    consBox.style.display = 'none';
+    return;
+  }
+
+  if (item.batchId) {
+    hintEl.innerText = `قطعة من دفعة إكسسوارات: ${item.batchTitle || ''}`;
+    consBox.style.display = 'none';
+  } else if (isConsignmentItem(item)) {
+    hintEl.innerText = `جهاز أمانة / عمولة (لم يُحتسب في تكلفة الأجهزة)`;
+    consBox.style.display = 'block';
+    profInput.dataset.touched = '';
+    const sellVal = parseFloat(document.getElementById('sellPriceInput').value) || 0;
+    if (item.expectedProfit !== undefined && item.expectedProfit !== null) {
+      profInput.value = formatJod(item.expectedProfit);
+    } else if (sellVal > 0) {
+      profInput.value = formatJod(sellVal);
+    } else {
+      profInput.value = '';
+    }
+  } else {
+    hintEl.innerText = `سعر شراء الجهاز: ${formatJod(item.buyPrice || 0)} JOD`;
+    consBox.style.display = 'none';
+  }
+}
+
+function completeSale() {
+  const itemId = document.getElementById('sellItemSelect').value;
+  const item = inventory.find(x => x.id === itemId);
+  if (!item) return showToast("اختر جهازاً أولاً");
+
+  const payType = document.getElementById('payTypeSelect').value;
+  const cons = isConsignmentItem(item);
+  const buyPrice = cons ? 0 : formatJod(item.buyPrice || 0);
+  const enteredSellPrice = formatJod(parseFloat(document.getElementById('sellPriceInput').value) || 0);
+  const saleDate = new Date().toISOString().split('T')[0];
+  const warranty = document.getElementById('sellWarrantySelect').value || 'فحص تشغيلي 7 أيام';
+  const createInv = document.getElementById('autoCreateSaleInvoice').value === 'yes';
+  const maxSaleOrder = sales.length > 0 ? Math.max(...sales.map(getItemSortKey)) : Date.now();
+
+  const rawConsProf = document.getElementById('sellConsignmentProfitInput').value;
+  const consProfit = cons
+    ? (rawConsProf !== '' ? formatJod(parseFloat(rawConsProf) || 0) : enteredSellPrice)
+    : null;
+
+  let custName = 'عميل نقدي';
+  let paid = enteredSellPrice;
+  let remaining = 0;
+  let isSettled = true;
+  let dueDate = '';
+  let payments = [{ id: 'pay_' + Date.now(), amount: enteredSellPrice, date: saleDate }];
+  let invoiceAmount = enteredSellPrice;
+
+  if (payType === 'cash') {
+    if (enteredSellPrice <= 0) return showToast("أدخل سعر بيع صحيح");
+    const sale = {
+      id: 'sale_' + Date.now(),
+      sortOrder: maxSaleOrder + 1000,
+      item: { ...item, buyPrice: buyPrice, fundingSource: cons ? 'consignment' : 'own', isConsignment: cons },
+      sellPrice: enteredSellPrice,
+      consignmentProfit: consProfit,
+      profit: cons ? formatJod(consProfit) : formatJod(enteredSellPrice - buyPrice),
+      payType: 'cash',
+      custName,
+      warranty,
+      paid: enteredSellPrice,
+      remaining: 0,
+      isSettled: true,
+      dueDate: '',
+      date: saleDate,
+      payments
+    };
+    sales.unshift(sale);
+  } else {
+    const rawFirstPaid = parseFloat(document.getElementById('paidAmountInput').value) || 0;
+    if (rawFirstPaid < 0) return showToast("قيمة الدفعة غير صحيحة");
+    if (enteredSellPrice > 0 && rawFirstPaid > enteredSellPrice) {
+      return showToast("الدفعة الأولى أكبر من السعر المتفق عليه");
+    }
+
+    custName = document.getElementById('custNameInput').value.trim() || 'عميل ذمم';
+    dueDate = document.getElementById('dueDateInput').value || '';
+    paid = formatJod(rawFirstPaid);
+    isSettled = enteredSellPrice > 0 && paid >= enteredSellPrice;
+    remaining = enteredSellPrice > 0
+      ? formatJod(Math.max(0, enteredSellPrice - paid))
+      : formatJod(Math.max(0, buyPrice - paid));
+    payments = paid > 0 ? [{ id: 'pay_' + Date.now(), amount: paid, date: saleDate }] : [];
+    invoiceAmount = enteredSellPrice > 0 ? enteredSellPrice : paid;
+
+    const sale = {
+      id: 'sale_' + Date.now(),
+      sortOrder: maxSaleOrder + 1000,
+      item: { ...item, buyPrice: buyPrice, fundingSource: cons ? 'consignment' : 'own', isConsignment: cons },
+      sellPrice: enteredSellPrice,
+      consignmentProfit: consProfit,
+      profit: cons ? formatJod(consProfit) : formatJod(Math.max(0, paid - buyPrice)),
+      payType: 'debt',
+      custName,
+      warranty,
+      paid,
+      remaining,
+      isSettled,
+      dueDate,
+      date: saleDate,
+      payments
+    };
+    sales.unshift(sale);
+  }
+
+  let createdInvoiceId = null;
+  if (createInv && invoiceAmount > 0) {
+    const maxInvOrder = invoices.length > 0 ? Math.max(...invoices.map(getItemSortKey)) : Date.now();
+    createdInvoiceId = 'inv_' + Date.now();
+    invoices.unshift({
+      id: createdInvoiceId,
+      sortOrder: maxInvOrder + 1000,
+      invType: 'sale',
+      invNumber: generateNextInvoiceNumber(),
+      date: saleDate,
+      partyName: custName,
+      warranty,
+      itemTitle: `${item.model} (${item.storage || ''}) - ${item.color || ''}`,
+      qty: 1,
+      unitPrice: invoiceAmount,
+      discount: 0,
+      totalAmount: invoiceAmount,
+      imei: item.imei || '-',
+      payStatus: payType === 'cash' ? 'مدفوعة بالكامل' : 'دفعة أولى / ذمم',
+      notes: `كفالة الجهاز: ${warranty}`
+    });
+  }
+
+  inventory = inventory.filter(x => x.id !== itemId);
+  syncToCloud();
+
+  document.getElementById('sellPriceInput').value = '';
+  document.getElementById('sellConsignmentProfitInput').value = '';
+  document.getElementById('sellConsignmentProfitInput').dataset.touched = '';
+  document.getElementById('custNameInput').value = '';
+  document.getElementById('paidAmountInput').value = '0';
+  document.getElementById('dueDateInput').value = '';
+
+  showToast(createdInvoiceId ? "تم تسجيل البيعة وإصدار الفاتورة" : "تم تسجيل البيعة بنجاح");
+  if (createdInvoiceId) {
+    openInvoicePreview(createdInvoiceId);
+  }
+}
+
+function openEditSaleModal(saleId) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s) return;
+
+  const cons = isConsignmentItem(s.item);
+  document.getElementById('editSaleId').value = s.id;
+  const buyP = formatJod(s.item?.buyPrice || 0);
+  document.getElementById('editSaleDeviceInfo').innerText = cons
+    ? `${s.item ? s.item.model : 'جهاز'} (${s.item?.storage || ''}) — جهاز أمانة (بدون تكلفة)`
+    : `${s.item ? s.item.model : 'جهاز'} (${s.item?.storage || ''}) — سعر الشراء: ${buyP} JOD`;
+
+  document.getElementById('editSellPriceInput').value = formatJod(s.sellPrice || 0);
+  document.getElementById('editPayTypeSelect').value = s.payType === 'debt' ? 'debt' : 'cash';
+  document.getElementById('editSaleConsignmentGroup').style.display = cons ? 'block' : 'none';
+  document.getElementById('editConsignmentProfitInput').value =
+    (s.consignmentProfit !== undefined && s.consignmentProfit !== null) ? formatJod(s.consignmentProfit) : formatJod(s.sellPrice || 0);
+
+  document.getElementById('editCustNameInput').value = s.custName || '';
+  document.getElementById('editPaidAmountInput').value = formatJod(s.paid || 0);
+  document.getElementById('editDueDateInput').value = s.dueDate || '';
+  document.getElementById('editSaleDateInput').value = s.date || new Date().toISOString().split('T')[0];
+
+  toggleEditSaleDebtFields();
+  document.getElementById('editSaleModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeEditSaleModal() {
+  document.getElementById('editSaleModal').style.display = 'none';
+}
+
+function toggleEditSaleDebtFields() {
+  const isDebt = document.getElementById('editPayTypeSelect').value === 'debt';
+  document.getElementById('editSaleDebtFields').style.display = isDebt ? 'block' : 'none';
+}
+
+function saveSaleEdit() {
+  const saleId = document.getElementById('editSaleId').value;
+  const idx = sales.findIndex(x => x.id === saleId);
+  if (idx === -1) return;
+
+  const existing = sales[idx];
+  const cons = isConsignmentItem(existing.item);
+  const newSellPrice = formatJod(parseFloat(document.getElementById('editSellPriceInput').value) || 0);
+  const newPayType = document.getElementById('editPayTypeSelect').value;
+  const newCustName = document.getElementById('editCustNameInput').value.trim() || (newPayType === 'cash' ? 'عميل نقدي' : 'عميل ذمم');
+  const newDate = document.getElementById('editSaleDateInput').value || existing.date || new Date().toISOString().split('T')[0];
+  const buyPrice = cons ? 0 : formatJod(existing.item?.buyPrice || 0);
+  const newConsProfit = cons ? formatJod(parseFloat(document.getElementById('editConsignmentProfitInput').value) || 0) : existing.consignmentProfit;
+
+  if (newPayType === 'cash') {
+    const finalSell = newSellPrice > 0 ? newSellPrice : formatJod(existing.paid || buyPrice);
+    sales[idx] = {
+      ...existing,
+      sellPrice: finalSell,
+      consignmentProfit: cons ? (document.getElementById('editConsignmentProfitInput').value !== '' ? newConsProfit : finalSell) : existing.consignmentProfit,
+      payType: 'cash',
+      custName: newCustName,
+      paid: finalSell,
+      remaining: 0,
+      isSettled: true,
+      dueDate: '',
+      date: newDate
+    };
+  } else {
+    const rawPaid = parseFloat(document.getElementById('editPaidAmountInput').value) || 0;
+    if (newSellPrice > 0 && rawPaid > newSellPrice) {
+      return showToast("إجمالي المحصّل أكبر من السعر المتفق عليه");
+    }
+    const newPaid = formatJod(rawPaid);
+    const settledNow = newSellPrice > 0 && newPaid >= newSellPrice;
+    const rem = settledNow
+      ? 0
+      : (newSellPrice > 0
+          ? formatJod(Math.max(0, newSellPrice - newPaid))
+          : formatJod(Math.max(0, buyPrice - newPaid)));
+
+    sales[idx] = {
+      ...existing,
+      sellPrice: newSellPrice,
+      consignmentProfit: newConsProfit,
+      payType: 'debt',
+      custName: newCustName,
+      paid: newPaid,
+      remaining: rem,
+      isSettled: settledNow,
+      dueDate: document.getElementById('editDueDateInput').value || '',
+      date: newDate
+    };
+  }
+
+  syncToCloud();
+  closeEditSaleModal();
+  showToast("تم حفظ التعديلات");
+}
+
+function deleteSale(saleId) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s) return;
+
+  const cons = isConsignmentItem(s.item);
+  const prevBuyPrice = cons
+    ? 0
+    : ((s.item && s.item.buyPrice !== undefined && s.item.buyPrice !== null)
+        ? formatJod(s.item.buyPrice)
+        : 0);
+
+  const deviceTitle = s.item?.model || 'جهاز';
+  pendingDeleteSaleId = saleId;
+  document.getElementById('confirmDeleteSaleText').innerText = cons
+    ? `هل أنت متأكد من حذف بيعة (${deviceTitle}) وإرجاعه إلى المخزون كجهاز أمانة (بدون احتساب تكلفة)؟`
+    : `هل أنت متأكد من حذف بيعة (${deviceTitle}) وإرجاعه إلى المخزون بقيمة شرائه السابقة (${prevBuyPrice} JOD)؟`;
+  document.getElementById('confirmDeleteSaleModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function cancelDeleteSale() {
+  pendingDeleteSaleId = null;
+  document.getElementById('confirmDeleteSaleModal').style.display = 'none';
+}
+
+function confirmDeleteSaleYes() {
+  const saleId = pendingDeleteSaleId;
+  cancelDeleteSale();
+  if (!saleId) return;
+
+  const s = sales.find(x => x.id === saleId);
+  if (!s) return;
+
+  const cons = isConsignmentItem(s.item);
+  const prevBuyPrice = cons
+    ? 0
+    : ((s.item && s.item.buyPrice !== undefined && s.item.buyPrice !== null)
+        ? formatJod(s.item.buyPrice)
+        : 0);
+
+  const deviceTitle = s.item?.model || 'جهاز';
+  const maxOrder = inventory.length > 0 ? Math.max(...inventory.map(getItemSortKey)) : Date.now();
+  const baseItem = s.item || {
+    model: deviceTitle,
+    brand: 'Apple',
+    color: 'غير محدد',
+    storage: '256GB',
+    battery: 100,
+    sim: 'شريحة + eSIM',
+    cond: 'new',
+    condition: 'new',
+    imei: '-',
+    note: ''
+  };
+
+  const restoredId = (baseItem.id && !inventory.some(invItem => invItem.id === baseItem.id))
+    ? baseItem.id
+    : ('item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+
+  inventory.unshift({
+    ...baseItem,
+    id: restoredId,
+    fundingSource: cons ? 'consignment' : 'own',
+    isConsignment: cons,
+    buyPrice: prevBuyPrice,
+    date: baseItem.date || s.date || new Date().toISOString().split('T')[0],
+    sortOrder: maxOrder + 1000
+  });
+
+  sales = sales.filter(x => x.id !== saleId);
+  syncToCloud();
+  showToast("تم حذف البيعة وإرجاع الجهاز");
+}
+
+function payDebt(saleId) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s) return;
+
+  const cons = isConsignmentItem(s.item);
+  const buyPrice = cons ? 0 : formatJod(s.item?.buyPrice || 0);
+  const curPaid = formatJod(s.paid || 0);
+  const agreedPrice = formatJod(s.sellPrice || 0);
+  const remToCost = formatJod(Math.max(0, buyPrice - curPaid));
+
+  let infoLine = cons
+    ? `جهاز أمانة (بدون تكلفة) | المحصّل: ${curPaid} JOD`
+    : `سعر الشراء: ${buyPrice} JOD | المحصّل: ${curPaid} JOD`;
+  if (!cons && remToCost > 0) {
+    infoLine += `\nمتبقي لتغطية الشراء: ${remToCost} JOD`;
+  } else if (!cons) {
+    infoLine += `\nالشراء مغطّى • ربح حالي: +${formatJod(Math.max(0, curPaid - buyPrice))} JOD`;
+  }
+  if (agreedPrice > 0) {
+    infoLine += `\nالسعر المتفق: ${agreedPrice} JOD (المتبقي: ${formatJod(Math.max(0, agreedPrice - curPaid))} JOD)`;
+  }
+
+  const rawAmt = parseFloat(prompt(
+    `الجهاز: ${s.item?.model || 'جهاز'}\nالعميل: ${s.custName}\n${infoLine}\n\nأدخل قيمة الدفعة الجديدة:`
+  ));
+
+  if (!rawAmt || rawAmt <= 0) return;
+
+  if (agreedPrice > 0 && (curPaid + rawAmt) > agreedPrice) {
+    return showToast("الدفعة تتجاوز السعر المتفق عليه");
+  }
+
+  const amt = formatJod(rawAmt);
+  if (!Array.isArray(s.payments)) s.payments = [];
+  s.payments.push({
+    id: 'pay_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+    amount: amt,
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  s.paid = formatJod(curPaid + amt);
+
+  if (agreedPrice > 0 && s.paid >= agreedPrice) {
+    s.isSettled = true;
+    s.remaining = 0;
+  } else {
+    s.isSettled = false;
+    s.remaining = agreedPrice > 0
+      ? formatJod(agreedPrice - s.paid)
+      : formatJod(Math.max(0, buyPrice - s.paid));
+  }
+
+  syncToCloud();
+  showToast(`تمت إضافة دفعة ${amt} JOD`);
+}
+
+function editSinglePayment(saleId, payIndex) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s || !Array.isArray(s.payments) || !s.payments[payIndex]) return;
+
+  const p = s.payments[payIndex];
+  const oldAmt = formatJod(p.amount || 0);
+  const agreedPrice = formatJod(s.sellPrice || 0);
+  const otherPaid = formatJod(s.payments.reduce((sum, item, idx) => idx === payIndex ? sum : sum + Number(item.amount || 0), 0));
+
+  const rawNewAmt = parseFloat(prompt(
+    `تعديل دفعة بتاريخ ${p.date || ''}\nالقيمة الحالية: ${oldAmt} JOD\nأدخل القيمة الجديدة للدفعة:`
+  ));
+
+  if (isNaN(rawNewAmt) || rawNewAmt < 0) return;
+  const newAmt = formatJod(rawNewAmt);
+
+  if (agreedPrice > 0 && (otherPaid + newAmt) > agreedPrice) {
+    return showToast("إجمالي الدفعات يتجاوز السعر المتفق عليه");
+  }
+
+  s.payments[payIndex] = { ...p, amount: newAmt };
+  syncDebtTotalsFromPayments(s);
+  syncToCloud();
+  showToast("تم تعديل الدفعة وتحديث الحسابات");
+}
+
+function deleteSinglePayment(saleId, payIndex) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s || !Array.isArray(s.payments) || !s.payments[payIndex]) return;
+
+  s.payments.splice(payIndex, 1);
+  syncDebtTotalsFromPayments(s);
+  syncToCloud();
+  showToast("تم حذف الدفعة وتحديث الحسابات");
+}
+
+function settleDebtFinal(saleId) {
+  const s = sales.find(x => x.id === saleId);
+  if (!s) return;
+
+  const curPaid = formatJod(s.paid || 0);
+  s.isSettled = true;
+  s.remaining = 0;
+  if (!s.sellPrice || s.sellPrice < curPaid) {
+    s.sellPrice = curPaid;
+  }
+
+  syncToCloud();
+  showToast("تم إغلاق الذمة واحتساب الربح النهائي");
+}
+
+/* --- المصروفات --- */
+function addExpense() {
+  const reason = document.getElementById('expReasonInput').value.trim();
+  const amount = formatJod(parseFloat(document.getElementById('expAmountInput').value));
+  const date = document.getElementById('expDateInput').value || new Date().toISOString().split('T')[0];
+
+  if (!reason) return showToast("اكتب سبب الصرف");
+  if (!amount || amount <= 0) return showToast("أدخل قيمة صحيحة للمصروف");
+
+  const maxOrder = expenses.length > 0 ? Math.max(...expenses.map(getItemSortKey)) : Date.now();
+  expenses.unshift({
+    id: 'exp_' + Date.now(),
+    sortOrder: maxOrder + 1000,
+    reason, amount, date
+  });
+
+  syncToCloud();
+  document.getElementById('expReasonInput').value = '';
+  document.getElementById('expAmountInput').value = '';
+  document.getElementById('expDateInput').value = new Date().toISOString().split('T')[0];
+  showToast("تم إضافة المصروف");
+}
+
+function openEditExpenseModal(expId) {
+  const exp = expenses.find(x => x.id === expId);
+  if (!exp) return;
+
+  document.getElementById('editExpenseId').value = exp.id;
+  document.getElementById('editExpReasonInput').value = exp.reason || '';
+  document.getElementById('editExpAmountInput').value = formatJod(exp.amount || 0);
+  document.getElementById('editExpDateInput').value = exp.date || new Date().toISOString().split('T')[0];
+  document.getElementById('editExpenseModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeEditExpenseModal() {
+  document.getElementById('editExpenseModal').style.display = 'none';
+}
+
+function saveExpenseEdit() {
+  const expId = document.getElementById('editExpenseId').value;
+  const idx = expenses.findIndex(x => x.id === expId);
+  if (idx === -1) return;
+
+  const reason = document.getElementById('editExpReasonInput').value.trim();
+  const amount = formatJod(parseFloat(document.getElementById('editExpAmountInput').value));
+  const date = document.getElementById('editExpDateInput').value || expenses[idx].date || new Date().toISOString().split('T')[0];
+
+  if (!reason) return showToast("اكتب سبب الصرف");
+  if (isNaN(amount) || amount < 0) return showToast("قيمة غير صحيحة");
+
+  expenses[idx] = { ...expenses[idx], reason, amount, date };
+  syncToCloud();
+  closeEditExpenseModal();
+  showToast("تم تحديث المصروف");
+}
+
+function deleteExpense(expId) {
+  expenses = expenses.filter(x => x.id !== expId);
+  syncToCloud();
+  showToast("تم حذف المصروف");
+}
+
+function renderExpenses() {
+  const totalExp = formatJod(expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0));
+  document.getElementById('expTotalBar').innerText = `${totalExp} JOD (${expenses.length} بند)`;
+
+  document.getElementById('expensesList').innerHTML = expenses.map(e => `
+    <div class="item-card" style="border-right: 4px solid #f59e0b;">
+      <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+        <div>
+          <div style="font-weight:900; font-size:15px; color:#0f172a;">${escapeHtml(e.reason)}</div>
+          <div style="font-size:12px; color:var(--muted); margin-top:3px; font-weight:600;">${escapeHtml(e.date || '-')} • يُخصم من الأرباح فقط</div>
+        </div>
+        <div style="text-align:left; flex-shrink:0;">
+          <div style="font-weight:900; color:#b45309; font-size:15px;">-${formatJod(e.amount || 0)} JOD</div>
+          <div style="display:flex; gap:4px; margin-top:8px; justify-content:flex-end;">
+            <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="openEditExpenseModal('${e.id}')">
+              <i data-lucide="pencil" class="ico-sm"></i>
+              <span>تعديل</span>
+            </button>
+            <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteExpense('${e.id}')" title="حذف">
+              <i data-lucide="trash-2" class="ico-sm"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('') || '<p style="text-align:center; color:var(--muted);">لا توجد مصروفات مسجلة بعد</p>';
+}
+
+/* --- نافذة الذمم --- */
+function isOpenDebt(s) {
+  return s.payType === 'debt' && !s.isSettled;
+}
+
+function openDebtsModal() {
+  renderDebtsModalContent();
+  document.getElementById('debtsModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closeDebtsModal() {
+  document.getElementById('debtsModal').style.display = 'none';
+}
+
+function renderDebtsModalContent() {
+  const activeDebts = sales.filter(isOpenDebt);
+  const totalRemToCost = formatJod(activeDebts.reduce((sum, s) => {
+    const buyP = isConsignmentItem(s.item) ? 0 : Number(s.item?.buyPrice || 0);
+    const paidAmt = Number(s.paid || 0);
+    const agreed = Number(s.sellPrice || 0);
+    return sum + (agreed > 0 ? Math.max(0, agreed - paidAmt) : Math.max(0, buyP - paidAmt));
+  }, 0));
+
+  document.getElementById('debtsModalTotal').innerText =
+    `المتبقي التقديري: ${totalRemToCost} JOD (${activeDebts.length} ذمم جارية)`;
+
+  if (activeDebts.length === 0) {
+    document.getElementById('debtsModalBody').innerHTML = '<p style="text-align:center; color:var(--muted); padding:20px; font-weight:700;">لا توجد أي ذمم مفتوحة حالياً.</p>';
+    return;
+  }
+
+  document.getElementById('debtsModalBody').innerHTML = activeDebts.map(s => {
+    const item = s.item || {};
+    const cons = isConsignmentItem(item);
+    const used = isItemUsed(item);
+    const buyP = cons ? 0 : formatJod(item.buyPrice || 0);
+    const paidAmt = formatJod(s.paid || 0);
+    const agreed = formatJod(s.sellPrice || 0);
+    const remCost = formatJod(Math.max(0, buyP - paidAmt));
+    const curProfit = formatJod(Math.max(0, paidAmt - buyP));
+
+    const paymentsList = Array.isArray(s.payments) ? s.payments : [];
+    const paymentsHtml = paymentsList.length > 0
+      ? `<div style="margin-top:8px;">
+          <div style="font-size:11px; font-weight:800; color:#334155; margin-bottom:3px;">الدفعات المسجلة:</div>
+          ${paymentsList.map((p, pIdx) => `
+            <div class="payment-row-item">
+              <span>#${pIdx + 1}: <b>${formatJod(p.amount)} JOD</b> <span style="color:#64748b;">(${escapeHtml(p.date || '-')})</span></span>
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="btn btn-xs" style="background:#dbeafe; color:#1e40af;" onclick="editSinglePayment('${s.id}', ${pIdx})" title="تعديل الدفعة">
+                  <i data-lucide="pencil" class="ico-sm"></i>
+                </button>
+                <button type="button" class="btn btn-xs" style="background:#fee2e2; color:#991b1b;" onclick="deleteSinglePayment('${s.id}', ${pIdx})" title="حذف الدفعة">
+                  <i data-lucide="trash-2" class="ico-sm"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>`
+      : `<div style="margin-top:6px; font-size:11px; color:#64748b;">لا توجد دفعات مسجلة بعد</div>`;
+
+    return `
+      <div class="debt-item-box">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div>
+            <span class="badge ${used ? 'badge-used' : 'badge-new'}">${used ? 'مستخدم' : 'جديد'}</span>
+            ${cons ? `<span class="badge badge-consignment">أمانة</span>` : ''}
+            <div style="font-weight:900; font-size:15px; margin-top:4px; color:#0f172a;">${escapeHtml(item.model || 'جهاز')} (${escapeHtml(item.storage || '')})</div>
+            <div style="font-size:12px; color:#475569; font-weight:600;">اللون: ${escapeHtml(item.color || '-')} • ${cons ? '<b>أمانة بدون تكلفة</b>' : `سعر الشراء: <b>${buyP} JOD</b>`}</div>
+          </div>
+          <div style="text-align:left;">
+            <div style="font-size:11px; color:#991b1b; font-weight:700;">المحصّل حتى الآن:</div>
+            <div style="font-size:17px; font-weight:900; color:#059669;">${paidAmt} JOD</div>
+          </div>
+        </div>
+        <div style="margin-top:8px; padding-top:8px; border-top:1px dashed #fca5a5; font-size:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <div>
+              <div><b>العميل:</b> ${escapeHtml(s.custName || 'غير محدد')}</div>
+              <div style="color:#64748b; margin-top:2px;">
+                ${cons ? `ربح محقق حالياً: <b style="color:#059669;">+${formatJod(s.profit || 0)} JOD</b>` : (remCost > 0 ? `متبقي لتغطية الشراء: <b>${remCost} JOD</b>` : `الشراء مغطّى • ربح محقق حالياً: <b style="color:#059669;">+${curProfit} JOD</b>`)}
+                ${agreed > 0 ? ` • المتفق: ${agreed} JOD` : ' • ذمة مفتوحة'}
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:5px; flex-shrink:0;">
+              <button class="btn btn-sm btn-primary" onclick="payDebt('${s.id}')">
+                <i data-lucide="plus" class="ico-sm"></i>
+                <span>دفعة جديدة</span>
+              </button>
+              <button class="btn btn-sm btn-dark" onclick="settleDebtFinal('${s.id}')">
+                <i data-lucide="lock" class="ico-sm"></i>
+                <span>إغلاق</span>
+              </button>
+            </div>
+          </div>
+          ${paymentsHtml}
+        </div>
+      </div>
+    `;
+  }).join('');
+  refreshIcons();
+}
+
+/* --- تقرير PDF للمخزون --- */
+function openPdfReport() {
+  document.getElementById('pdfDate').innerText = "تاريخ الكشف: " + new Date().toLocaleDateString('ar-JO');
+
+  const grouped = {};
+  let totalVal = 0;
+  inventory.forEach(i => {
+    const cons = isConsignmentItem(i);
+    const p = cons ? 0 : Number(i.buyPrice || 0);
+    totalVal += p;
+    const used = isItemUsed(i);
+    const key = `${i.model}|${used ? 'used' : 'new'}|${cons ? 'cons' : 'own'}|${i.storage}|${i.color}|${i.sim}`;
+    if (!grouped[key]) grouped[key] = { ...i, isUsed: used, isCons: cons, qty: 0, totalCost: 0 };
+    grouped[key].qty += 1;
+    grouped[key].totalCost += p;
+  });
+
+  const summaryRows = Object.values(grouped).map((g, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td><b>${escapeHtml(g.model)}</b> (${escapeHtml(g.storage || '')})</td>
+      <td>${g.isUsed ? 'مستخدم' : 'جديد'}${g.isCons ? ' (أمانة)' : ''}</td>
+      <td>${escapeHtml(g.color || '-')} / ${escapeHtml(g.sim || '-')}</td>
+      <td><b>${g.qty}</b></td>
+      <td>${g.isCons ? 'أمانة (بدون تكلفة)' : formatJod(g.totalCost) + ' JOD'}</td>
+    </tr>
+  `).join('');
+
+  const detailRows = inventory.map((i, idx) => {
+    const cons = isConsignmentItem(i);
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${escapeHtml(i.model)} (${escapeHtml(i.storage || '')})${i.note ? `<div style="font-size:10px; color:#78350f;">ملاحظة: ${escapeHtml(i.note)}</div>` : ''}</td>
+        <td>${isItemUsed(i) ? 'مستخدم' : 'جديد'}${cons ? ' • أمانة' : ''}</td>
+        <td>${escapeHtml(i.color || '-')} | ${i.battery || 100}%</td>
+        <td>${escapeHtml(i.imei || '-')}</td>
+        <td>${cons ? 'أمانة (0 JOD)' : formatJod(i.buyPrice || 0) + ' JOD'}</td>
+      </tr>
+    `;
+  }).join('');
+
+  document.getElementById('pdfBody').innerHTML = `
+    <h4 style="margin:12px 0 4px;">1. ملخص الكميات المتوفرة حسب النوع</h4>
+    <table>
+      <thead><tr><th>#</th><th>الموديل</th><th>الحالة</th><th>المواصفات</th><th>الكمية</th><th>إجمالي التكلفة</th></tr></thead>
+      <tbody>${summaryRows || '<tr><td colspan="6">المخزون فارغ</td></tr>'}</tbody>
+    </table>
+
+    <h4 style="margin:16px 0 4px;">2. كشف تفصيلي لكل قطعة (IMEI والبطارية والملاحظات)</h4>
+    <table>
+      <thead><tr><th>#</th><th>الجهاز</th><th>الحالة</th><th>اللون/البطارية</th><th>IMEI</th><th>سعر الشراء</th></tr></thead>
+      <tbody>${detailRows || '<tr><td colspan="6">لا توجد قطع</td></tr>'}</tbody>
+    </table>
+
+    <div style="margin-top:14px; padding:10px; background:#f1f5f9; border-radius:10px; font-weight:800; display:flex; justify-content:space-between;">
+      <span>إجمالي عدد الأجهزة: ${inventory.length} قطعة</span>
+      <span>إجمالي تكلفة الأجهزة المملوكة: ${formatJod(totalVal)} JOD</span>
+    </div>
+  `;
+
+  document.getElementById('pdfModal').style.display = 'flex';
+  refreshIcons();
+}
+
+function closePdf() {
+  const m = document.getElementById('pdfModal');
+  m.classList.remove('print-target');
+  m.style.display = 'none';
+}
+
+function printStockPdf() {
+  document.getElementById('invoicePreviewModal').classList.remove('print-target');
+  document.getElementById('profitReportModal').classList.remove('print-target');
+  document.getElementById('pdfModal').classList.add('print-target');
+  window.print();
+}
+
+/* --- عرض كل البيانات وحساب الأرباح --- */
+function renderAll() {
+  recalculateAllSalesProfits();
+
+  let totalStock = 0, newVal = 0, usedVal = 0;
+  const staleItems = [];
+
+  inventory.forEach(i => {
+    const cons = isConsignmentItem(i);
+    const p = cons ? 0 : Number(i.buyPrice || 0);
+    totalStock += p;
+    if (!cons) {
+      if (isItemUsed(i)) usedVal += p; else newVal += p;
+    }
+    if (getDaysOld(i.date) >= 12) staleItems.push(`${i.model} (${getDaysOld(i.date)} يوم)`);
+  });
+
+  sales.forEach(s => {
+    if (isOpenDebt(s) && s.item && !s.item.batchId && !isConsignmentItem(s.item)) {
+      const buyP = Number(s.item.buyPrice || 0);
+      totalStock += buyP;
+      if (isItemUsed(s.item)) usedVal += buyP; else newVal += buyP;
+    }
+  });
+
+  const activeBatchesRemainingCost = batches.reduce((sum, b) => sum + getBatchStats(b).remainingCost, 0);
+  totalStock += activeBatchesRemainingCost;
+  newVal += activeBatchesRemainingCost;
+
+  document.getElementById('statCount').innerText = inventory.length + " جهاز";
+  document.getElementById('statStockVal').innerText = formatJod(totalStock) + " JOD";
+  document.getElementById('statNewVal').innerText = formatJod(newVal) + " JOD";
+  document.getElementById('statUsedVal').innerText = formatJod(usedVal) + " JOD";
+  document.getElementById('statInvoicesCount').innerText = invoices.length + " فاتورة";
+
+  let salesProfit = 0, monthSalesProfit = 0, totalDebt = 0, debtCount = 0;
+  const curMonth = new Date().toISOString().slice(0, 7);
+
+  sales.forEach(s => {
+    const p = Number(s.profit || 0);
+    salesProfit += p;
+    if ((s.date || '').startsWith(curMonth)) monthSalesProfit += p;
+    if (isOpenDebt(s)) {
+      const buyP = isConsignmentItem(s.item) ? 0 : Number(s.item?.buyPrice || 0);
+      const paidAmt = Number(s.paid || 0);
+      const agreed = Number(s.sellPrice || 0);
+      totalDebt += (agreed > 0 ? Math.max(0, agreed - paidAmt) : Math.max(0, buyP - paidAmt));
+      debtCount++;
+    }
+  });
+
+  let totalExtra = 0, monthExtra = 0;
+  extraIncomes.forEach(ex => {
+    const amt = Number(ex.amount || 0);
+    totalExtra += amt;
+    if ((ex.date || '').startsWith(curMonth)) monthExtra += amt;
+  });
+
+  let totalExpenses = 0, monthExpenses = 0;
+  expenses.forEach(e => {
+    const amt = Number(e.amount || 0);
+    totalExpenses += amt;
+    if ((e.date || '').startsWith(curMonth)) monthExpenses += amt;
+  });
+
+  const netProfit = formatJod(salesProfit + totalExtra - totalExpenses);
+  const netMonthProfit = formatJod(monthSalesProfit + monthExtra - monthExpenses);
+
+  const profitEl = document.getElementById('statProfit');
+  profitEl.innerText = netProfit + " JOD";
+  profitEl.style.color = netProfit >= 0 ? 'var(--accent-dark)' : 'var(--danger)';
+
+  document.getElementById('statMonthProfit').innerHTML = `<span>هذا الشهر: ${netMonthProfit} JOD</span><i data-lucide="file-text" class="ico-sm"></i>`;
+  document.getElementById('statExtraIncome').innerText = `+${formatJod(totalExtra)} JOD`;
+  document.getElementById('statExtraIncomeSub').innerHTML = `<span>هذا الشهر: +${formatJod(monthExtra)} JOD</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
+  document.getElementById('statExpenses').innerText = formatJod(totalExpenses) + " JOD";
+  document.getElementById('statExpensesSub').innerHTML = `<span>هذا الشهر: ${formatJod(monthExpenses)} JOD</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
+  document.getElementById('statDebts').innerText = formatJod(totalDebt) + " JOD";
+  document.getElementById('statDebtsCount').innerText = `${debtCount} ذمم جارية`;
+
+  if (staleItems.length > 0) {
+    document.getElementById('staleAlertBox').style.display = 'block';
+    document.getElementById('staleList').innerText = staleItems.join(' • ');
+  } else {
+    document.getElementById('staleAlertBox').style.display = 'none';
+  }
+
+  document.getElementById('sellItemSelect').innerHTML = inventory.map(i => {
+    const cons = isConsignmentItem(i);
+    const priceTag = i.batchId
+      ? `دفعة: ${i.batchTitle || ''}`
+      : (cons ? `أمانة • بدون تكلفة` : `شراء: ${formatJod(i.buyPrice || 0)} JOD`);
+    return `<option value="${i.id}">${escapeHtml(i.model)} (${escapeHtml(i.storage || '')}) - ${escapeHtml(i.color || '')} [${isItemUsed(i) ? 'مستخدم' : 'جديد'}] - ${priceTag}</option>`;
+  }).join('') || '<option value="">لا توجد أجهزة متوفرة</option>';
+  updateSellHint();
+
+  document.getElementById('salesList').innerHTML = sales.map(s => {
+    const openD = isOpenDebt(s);
+    const cons = isConsignmentItem(s.item);
+    const buyP = cons ? 0 : formatJod(s.item?.buyPrice || 0);
+    const paidAmt = formatJod(s.paid || 0);
+    const sellText = s.payType === 'debt'
+      ? (Number(s.sellPrice || 0) > 0 ? `المتفق: <b>${formatJod(s.sellPrice)} JOD</b> • المحصّل: <b>${paidAmt} JOD</b>` : `ذمم مفتوحة • المحصّل: <b>${paidAmt} JOD</b>${cons ? ' (أمانة)' : ` (شراء: ${buyP} JOD)`}`)
+      : `البيع: <b>${formatJod(s.sellPrice)} JOD</b>${cons ? ' <span class="badge badge-consignment">أمانة</span>' : ''}`;
+
+    return `
+      <div class="item-card">
+        <div style="display:flex; justify-content:space-between; align-items:start; gap:8px;">
+          <div>
+            <b>${escapeHtml(s.item ? s.item.model : 'جهاز')} (${escapeHtml(s.item ? (s.item.storage || '') : '')})</b>
+            <div style="font-size:12px; color:var(--muted); margin-top:3px; font-weight:600;">${sellText} • العميل: ${escapeHtml(s.custName)} • ${escapeHtml(s.date)}</div>
+            ${s.warranty ? `<div style="margin-top:4px;"><span class="badge badge-warranty">كفالة: ${escapeHtml(s.warranty)}</span></div>` : ''}
+          </div>
+          <div style="text-align:left; flex-shrink:0;">
+            <div style="color:var(--accent-dark); font-weight:800; font-size:13px;">ربح: ${Number(s.profit) >= 0 ? '+' : ''}${formatJod(s.profit)} JOD</div>
+            <div style="display:flex; gap:4px; margin-top:6px; justify-content:flex-end;">
+              <button class="btn btn-sm" style="background:#dbeafe; color:#1e40af;" onclick="openEditSaleModal('${s.id}')">
+                <i data-lucide="pencil" class="ico-sm"></i>
+                <span>تعديل</span>
+              </button>
+              <button class="btn btn-sm" style="background:#fee2e2; color:#991b1b;" onclick="deleteSale('${s.id}')" title="حذف">
+                <i data-lucide="trash-2" class="ico-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        ${openD ? `
+          <div style="margin-top:8px; padding:7px 9px; background:#fef2f2; border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:6px;">
+            <span style="color:var(--danger); font-weight:800; font-size:12px;">
+              ${cons ? 'ذمة مفتوحة — جهاز أمانة' : (paidAmt < buyP ? `متبقي لتغطية الشراء: ${formatJod(buyP - paidAmt)} JOD` : 'سعر الشراء مغطّى — ذمة مفتوحة')}
+            </span>
+            <div style="display:flex; gap:5px;">
+              <button class="btn btn-sm btn-primary" onclick="payDebt('${s.id}')">دفعة جديدة</button>
+              <button class="btn btn-sm btn-dark" onclick="settleDebtFinal('${s.id}')">إغلاق</button>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('') || '<p style="text-align:center; color:var(--muted);">لا توجد مبيعات مسجلة بعد</p>';
+
+  renderInvoices();
+  renderExtraIncomes();
+  renderExpenses();
+  renderInv();
+  refreshIcons();
+}
+
+updateModelsAndColors();
+setFundingSource('own');
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('dateInput').value = todayStr;
+document.getElementById('expDateInput').value = todayStr;
+document.getElementById('extraDateInput').value = todayStr;
+document.getElementById('invDateInput').value = todayStr;
+document.getElementById('invNumberInput').value = generateNextInvoiceNumber();
+updateInvoiceTotalPreview();
+refreshIcons();
+</script>
+</body>
+</html>
