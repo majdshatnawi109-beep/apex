@@ -1413,11 +1413,32 @@
     <div id="extraIncomeList"></div>
   </div>
 
-  <!-- المصروفات -->
+  <!-- المصروفات والنسخ الاحتياطي -->
   <div id="sec-exp" class="section">
     <div class="inv-total-bar" style="background: linear-gradient(135deg, #78350f 0%, #b45309 100%);">
       <span>إجمالي المصروفات (يُخصم من الأرباح فقط):</span>
       <span style="color:#fde68a; font-size:15px;" id="expTotalBar">0 JOD</span>
+    </div>
+
+    <div class="card" style="border-color:#a7f3d0; background:linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);">
+      <div style="font-weight:900; font-size:15px; color:#065f46; margin-bottom:6px; display:flex; align-items:center; gap:7px;">
+        <i data-lucide="hard-drive-download" class="ico"></i>
+        <span>النسخ الاحتياطي واسترجاع البيانات (.JSON)</span>
+      </div>
+      <div style="font-size:12px; color:#334155; font-weight:700; margin-bottom:12px; line-height:1.55;">
+        احفظ نسخة كاملة من المخزون، المبيعات، الذمم، الفواتير، الدفعات، الأرباح الخارجية، والمصروفات على جهازك لرفعها إلى Google Drive، أو استرجع نسخة سابقة بضغطة واحدة.
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button type="button" class="btn btn-primary" onclick="exportFullBackupJson()">
+          <i data-lucide="download" class="ico-sm"></i>
+          <span>تصدير نسخة احتياطية</span>
+        </button>
+        <button type="button" class="btn btn-blue" onclick="document.getElementById('backupFileInput').click()">
+          <i data-lucide="upload" class="ico-sm"></i>
+          <span>استرجاع نسخة</span>
+        </button>
+      </div>
+      <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none;" onchange="importFullBackupJson(event)">
     </div>
 
     <div class="card">
@@ -2134,6 +2155,60 @@ function syncToCloud() {
     invoices: invcObj,
     batches: batObj
   });
+}
+
+/* --- النسخ الاحتياطي والاسترجاع بصيغة JSON --- */
+function exportFullBackupJson() {
+  const backupData = {
+    app: "Apex JO",
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    data: {
+      inventory,
+      sales,
+      expenses,
+      extraIncomes,
+      invoices,
+      batches
+    }
+  };
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `apex-jo-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("تم تنزيل ملف النسخة الاحتياطية");
+}
+
+function importFullBackupJson(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const d = parsed && parsed.data ? parsed.data : parsed;
+      if (!d || !Array.isArray(d.inventory) || !Array.isArray(d.sales)) {
+        return showToast("ملف النسخة الاحتياطية غير صالح");
+      }
+      inventory = d.inventory || [];
+      sales = d.sales || [];
+      expenses = Array.isArray(d.expenses) ? d.expenses : [];
+      extraIncomes = Array.isArray(d.extraIncomes) ? d.extraIncomes : [];
+      invoices = Array.isArray(d.invoices) ? d.invoices : [];
+      batches = Array.isArray(d.batches) ? d.batches : [];
+      syncToCloud();
+      showToast("تمت استعادة النسخة الاحتياطية ومزامنتها");
+    } catch (err) {
+      showToast("تعذر قراءة ملف النسخة الاحتياطية");
+    }
+    event.target.value = "";
+  };
+  reader.readAsText(file);
 }
 
 function moveItem(id, direction) {
