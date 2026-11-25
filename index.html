@@ -277,6 +277,39 @@
     gap: 4px;
   }
 
+
+  .privacy-eye-btn {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    color: #e2e8f0;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.15s ease;
+    padding: 0;
+  }
+  .privacy-eye-btn:hover { background: rgba(255, 255, 255, 0.24); color: #fff; }
+  .privacy-eye-btn-light {
+    background: rgba(15, 23, 42, 0.06);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    color: #334155;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.15s ease;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .privacy-eye-btn-light:hover { background: rgba(15, 23, 42, 0.12); color: #0f172a; }
+
   .split-pills { display: flex; gap: 8px; margin-top: 12px; }
   .split-pill {
     flex: 1;
@@ -822,9 +855,14 @@
   <div id="sec-home" class="section active">
     <div class="stats-grid">
       <div class="stat-card full">
-        <div class="stat-label">
-          <i data-lucide="wallet" class="ico" style="color:#34d399;"></i>
-          <span>إجمالي تكلفة الأجهزة المشتراة من مالك (بدون الأمانات)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px;">
+          <div class="stat-label" style="margin-bottom:0;">
+            <i data-lucide="wallet" class="ico" style="color:#34d399;"></i>
+            <span>إجمالي تكلفة الأجهزة المشتراة من مالك (بدون الأمانات)</span>
+          </div>
+          <button type="button" class="privacy-eye-btn" id="togglePrivacyBtn" onclick="toggleAmountsPrivacy(event)" title="إخفاء / إظهار الأرباح والأموال">
+            <i data-lucide="eye" class="ico-sm"></i>
+          </button>
         </div>
         <div class="stat-val" id="statStockVal">0 JOD</div>
         <div class="split-pills">
@@ -852,9 +890,14 @@
       </div>
 
       <div class="stat-card clickable-profit" onclick="openProfitReport()" title="اضغط لعرض مصادر الأرباح وتصديرها PDF">
-        <div class="stat-label" style="color:#065f46;">
-          <i data-lucide="trending-up" class="ico" style="color:#059669;"></i>
-          <span>صافي الأرباح</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px;">
+          <div class="stat-label" style="color:#065f46; margin-bottom:0;">
+            <i data-lucide="trending-up" class="ico" style="color:#059669;"></i>
+            <span>صافي الأرباح</span>
+          </div>
+          <button type="button" class="privacy-eye-btn-light" id="toggleProfitEyeBtn" onclick="toggleAmountsPrivacy(event)" title="إخفاء / إظهار الأرباح والأموال">
+            <i data-lucide="eye" class="ico-sm"></i>
+          </button>
         </div>
         <div class="stat-val" style="color:var(--accent-dark);" id="statProfit">0 JOD</div>
         <div class="stat-sub" id="statMonthProfit">هذا الشهر: 0 JOD • تفاصيل PDF</div>
@@ -1904,6 +1947,31 @@ let tabHistory = ['home'];
 let imeiScanner = null;
 let pendingDeleteSaleId = null;
 let toastTimer = null;
+let hideFinancialAmounts = localStorage.getItem('apex_hide_amounts') === '1';
+
+function toggleAmountsPrivacy(e) {
+  if (e) e.stopPropagation();
+  hideFinancialAmounts = !hideFinancialAmounts;
+  localStorage.setItem('apex_hide_amounts', hideFinancialAmounts ? '1' : '0');
+  renderAll();
+  showToast(hideFinancialAmounts ? "تم إخفاء الأرباح والأموال" : "تم إظهار الأرباح والأموال");
+}
+
+function maskMoney(valStr) {
+  return hideFinancialAmounts ? "••••••" : valStr;
+}
+
+function updatePrivacyEyeIcons() {
+  const iconName = hideFinancialAmounts ? 'eye-off' : 'eye';
+  const titleText = hideFinancialAmounts ? 'إظهار الأرباح والأموال' : 'إخفاء الأرباح والأموال';
+  ['togglePrivacyBtn', 'toggleProfitEyeBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.title = titleText;
+      btn.innerHTML = `<i data-lucide="${iconName}" class="ico-sm"></i>`;
+    }
+  });
+}
 
 function refreshIcons() {
   renderBrandLogos();
@@ -4146,9 +4214,9 @@ function renderAll() {
   newVal += activeBatchesRemainingCost;
 
   document.getElementById('statCount').innerText = inventory.length + " جهاز";
-  document.getElementById('statStockVal').innerText = formatJod(totalStock) + " JOD";
-  document.getElementById('statNewVal').innerText = formatJod(newVal) + " JOD";
-  document.getElementById('statUsedVal').innerText = formatJod(usedVal) + " JOD";
+  document.getElementById('statStockVal').innerText = maskMoney(formatJod(totalStock) + " JOD");
+  document.getElementById('statNewVal').innerText = maskMoney(formatJod(newVal) + " JOD");
+  document.getElementById('statUsedVal').innerText = maskMoney(formatJod(usedVal) + " JOD");
   document.getElementById('statInvoicesCount').innerText = invoices.length + " فاتورة";
 
   let salesProfit = 0, monthSalesProfit = 0, totalDebt = 0, debtCount = 0;
@@ -4185,16 +4253,17 @@ function renderAll() {
   const netMonthProfit = formatJod(monthSalesProfit + monthExtra - monthExpenses);
 
   const profitEl = document.getElementById('statProfit');
-  profitEl.innerText = netProfit + " JOD";
+  profitEl.innerText = maskMoney(netProfit + " JOD");
   profitEl.style.color = netProfit >= 0 ? 'var(--accent-dark)' : 'var(--danger)';
 
-  document.getElementById('statMonthProfit').innerHTML = `<span>هذا الشهر: ${netMonthProfit} JOD</span><i data-lucide="file-text" class="ico-sm"></i>`;
-  document.getElementById('statExtraIncome').innerText = `+${formatJod(totalExtra)} JOD`;
-  document.getElementById('statExtraIncomeSub').innerHTML = `<span>هذا الشهر: +${formatJod(monthExtra)} JOD</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
-  document.getElementById('statExpenses').innerText = formatJod(totalExpenses) + " JOD";
-  document.getElementById('statExpensesSub').innerHTML = `<span>هذا الشهر: ${formatJod(monthExpenses)} JOD</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
-  document.getElementById('statDebts').innerText = formatJod(totalDebt) + " JOD";
+  document.getElementById('statMonthProfit').innerHTML = `<span>هذا الشهر: ${maskMoney(netMonthProfit + " JOD")}</span><i data-lucide="file-text" class="ico-sm"></i>`;
+  document.getElementById('statExtraIncome').innerText = maskMoney(`+${formatJod(totalExtra)} JOD`);
+  document.getElementById('statExtraIncomeSub').innerHTML = `<span>هذا الشهر: ${maskMoney("+" + formatJod(monthExtra) + " JOD")}</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
+  document.getElementById('statExpenses').innerText = maskMoney(formatJod(totalExpenses) + " JOD");
+  document.getElementById('statExpensesSub').innerHTML = `<span>هذا الشهر: ${maskMoney(formatJod(monthExpenses) + " JOD")}</span><i data-lucide="arrow-up-left" class="ico-sm"></i>`;
+  document.getElementById('statDebts').innerText = maskMoney(formatJod(totalDebt) + " JOD");
   document.getElementById('statDebtsCount').innerText = `${debtCount} ذمم جارية`;
+  updatePrivacyEyeIcons();
 
   if (staleItems.length > 0) {
     document.getElementById('staleAlertBox').style.display = 'block';
